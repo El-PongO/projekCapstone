@@ -1,0 +1,5 @@
+# Copy baris apiBaseUrl ke local.properties (jangan hapus sdk.dir).
+# Bila memakai adb reverse tcp:3000 tcp:3000:
+apiBaseUrl=http://127.0.0.1:3000/
+# Jika memakai emulator tanpa adb reverse dan backend menerima koneksi dari emulator:
+# apiBaseUrl=http://10.0.2.2:3000/
