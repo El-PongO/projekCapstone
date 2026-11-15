@@ -99,6 +99,21 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        PushNotificationHelper.ensureChannel(this)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                androidx.core.app.ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                    1001
+                )
+            }
+        }
+
         val store = SessionStore(this)
 
         setContent {
@@ -130,6 +145,18 @@ class MainActivity : ComponentActivity() {
 
                     val current = session
 
+                    LaunchedEffect(current?.token) {
+                        if (current != null) {
+                            while (true) {
+                                ApiService.syncFcmAndPollNotifications(
+                                    token = current.token,
+                                    userKey = current.user.agentCode.ifBlank { current.user.role }
+                                )
+                                kotlinx.coroutines.delay(15_000L)
+                            }
+                        }
+                    }
+
                     // =========================
                     // 1. HALAMAN LOGIN
                     // =========================
@@ -156,105 +183,18 @@ class MainActivity : ComponentActivity() {
                     }
 
                     // =========================
-                    // 2. HALAMAN PERFORMANCE
+                    // 2. HALAMAN DOWNLINE (HOME, PERFORMANCE, CRM, NEW PROPOSAL, DEALS DETAILS, PROFILE)
                     // =========================
+                    else if (current.user.role.lowercase() == "downline") {
 
-                    else if (showPerformance) {
-
-                        if (current.user.role.lowercase() == "upline") {
-
-                            UplinePerformanceScreen(
-                                session = current,
-
-                                onBack = {
-                                    showPerformance = false
-                                },
-
-                                onHome = {
-                                    showPerformance = false
-                                    showDownlines = false
-                                },
-
-                                onAddProject = {
-                                    Toast.makeText(
-                                        this@MainActivity,
-                                        "Add Project belum dibuat",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-
-                                onProfile = {
-                                    Toast.makeText(
-                                        this@MainActivity,
-                                        "Profile belum dibuat",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                },
-
-                                onExpired = {
-                                    store.clear()
-                                    session = null
-                                    showPerformance = false
-                                    showDownlines = false
-                                }
-                            )
-
-                        } else {
-
-                            // Performance lama untuk Admin dan Downline
-                            PerformanceScreen(
-                                session = current,
-
-                                onBack = {
-                                    showPerformance = false
-                                },
-
-                                onExpired = {
-                                    store.clear()
-                                    session = null
-                                    showPerformance = false
-                                    showDownlines = false
-                                }
-                            )
-                        }
-                    }
-
-
-                    // =========================
-                    // 3. HALAMAN MY DOWNLINES
-                    // =========================
-                    else if (
-                        current.user.role.lowercase() == "upline" &&
-                        showDownlines
-                    ) {
-
-                        UplineDownlinesScreen(
+                        DownlineAppScreen(
                             session = current,
-
-                            onBack = {
+                            onLogout = {
+                                store.clear()
+                                session = null
+                                showPerformance = false
                                 showDownlines = false
                             },
-
-                            onAddProject = {
-                                Toast.makeText(
-                                    this@MainActivity,
-                                    "Add Project belum dibuat",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            },
-
-                            onEarnings = {
-                                showPerformance = true
-                            },
-
-                            onProfile = {
-                                Toast.makeText(
-                                    this@MainActivity,
-                                    "Profile belum dibuat",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            },
-
                             onExpired = {
                                 store.clear()
                                 session = null
@@ -265,95 +205,40 @@ class MainActivity : ComponentActivity() {
                     }
 
                     // =========================
-                    // 4. DASHBOARD UPLINE
+                    // 3. HALAMAN UPLINE (HOME, MY DOWNLINES, MY PERFORMANCE, MY CRM, NEW DEALS, DEALS DETAILS, PROFILE)
                     // =========================
-                    else if (
-                        current.user.role.lowercase() == "upline"
-                    ) {
+                    else if (current.user.role.lowercase() == "upline") {
 
-                        UplineScreen(
-                            uplineName = current.user.name,
-
+                        UplineAppScreen(
+                            session = current,
                             onLogout = {
                                 store.clear()
                                 session = null
                                 showPerformance = false
                                 showDownlines = false
                             },
-
-                            onMenuClick = { menu ->
-
-                                when (menu) {
-
-                                    "performance" -> {
-                                        showPerformance = true
-                                    }
-
-                                    "downline" -> {
-                                        showDownlines = true
-                                    }
-
-                                    "crm" -> {
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "My CRM belum dibuat",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                }
-                            },
-
-                            onBottomMenuClick = { menu ->
-
-                                when (menu) {
-
-                                    "home" -> {
-                                        showDownlines = false
-                                    }
-
-                                    "add_project" -> {
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Add Project belum dibuat",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-
-                                    "earnings" -> {
-                                        showPerformance = true
-                                    }
-
-                                    "profile" -> {
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            "Profile belum dibuat",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                }
+                            onExpired = {
+                                store.clear()
+                                session = null
+                                showPerformance = false
+                                showDownlines = false
                             }
                         )
                     }
 
                     // =========================
-                    // 5. ADMIN / DOWNLINE
+                    // 4. HALAMAN ADMIN (GRAYSCALE TEMPLATE: HOME, AGENTS, USER DETAILS, MASTER ITEM, DEALS REPORTS, MASTER PROJECT, PAYMENTS, BROADCAST, EXPORT, DEALS DETAILS, PROFILE)
                     // =========================
                     else {
 
-                        DashboardScreen(
+                        AdminAppScreen(
                             session = current,
-
-                            onPerformance = {
-                                showPerformance = true
-                            },
-
                             onLogout = {
                                 store.clear()
                                 session = null
                                 showPerformance = false
                                 showDownlines = false
                             },
-
                             onExpired = {
                                 store.clear()
                                 session = null

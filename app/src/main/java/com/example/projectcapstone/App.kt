@@ -11,8 +11,15 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
 class App : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        appContext = applicationContext
+    }
+
     companion object {
         private const val TAG = "IntegraAPI"
+        var appContext: android.content.Context? = null
+            private set
 
         // Debug hanya mencatat alamat, method, status HTTP, dan jenis error.
         // Password, JWT, dan body request TIDAK dicetak ke Logcat.

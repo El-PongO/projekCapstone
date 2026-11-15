@@ -59,7 +59,7 @@ object UplineDownlineApi {
 
     // Untuk Android Emulator dengan ADB Reverse aktif.
     // Sementara disamakan dengan URL Backend kamu.
-    private const val BASE_URL = "http://127.0.0.1:3000/"
+    private val BASE_URL = BuildConfig.API_BASE_URL
 
     private val moshi = Moshi.Builder()
         .add(KotlinJsonAdapterFactory())
