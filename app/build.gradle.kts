@@ -8,7 +8,7 @@ plugins {
 val props = Properties().apply {
     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
 }
-val baseUrl = (props.getProperty("apiBaseUrl") ?: "http://192.168.0.17:3001/").let {
+val baseUrl = (props.getProperty("apiBaseUrl") ?: "http://127.0.0.1:3001/").let {
     if (it.endsWith("/")) it else "$it/"
 }
 

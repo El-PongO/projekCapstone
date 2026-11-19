@@ -1,7 +1,10 @@
-const express = require("express");
-const controller = require("../controllers/authController");
-const router = express.Router();
-
-router.post("/login", controller.login);
-
-module.exports = router;
+const router=require('express').Router();
+const bcrypt=require('bcryptjs');
+const jwt=require('jsonwebtoken');
+const {User}=require('../models');
+const {wrap,fail,nonempty,safeUser}=require('../utils/common');
+const {auth}=require('../middleware/auth');
+router.post('/login',wrap(require('../controllers/authController').login));
+router.get('/me',auth,wrap(async(req,res)=>res.json({user:safeUser(req.user)})));
+router.post('/logout',auth,(req,res)=>res.json({ok:true,message:'Hapus token di Android. Token JWT tetap berlaku sampai kedaluwarsa.'}));
+module.exports=router;

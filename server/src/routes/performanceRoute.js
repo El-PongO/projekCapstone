@@ -1,20 +1,7 @@
-
-const express = require("express");
-const router = express.Router();
-
-const performanceController = require(
-    "../controllers/performanceController"
-);
-
-const requireAuth = require(
-    "../middleware/authMiddleware"
-);
-
-// GET /api/performance
-router.get(
-    "/",
-    requireAuth,
-    performanceController.getPerformance
-);
-
-module.exports = router;
+const r=require('express').Router();
+const {auth}=require('../middleware/auth');
+const {wrap}=require('../utils/common');
+const controller=require('../controllers/performanceController');
+r.use(auth);
+r.get('/',wrap(controller.get));
+module.exports=r;

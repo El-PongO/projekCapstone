@@ -583,7 +583,9 @@ fun GlobalDealsDetailsRoute(
                 dealDetails = payload.dealDetails
             }
             result.onFailure { err ->
-                if (err is ApiError && err.unauthorized) onExpired()
+                if (err is ApiError && err.unauthorized) {
+                    onExpired()
+                }
             }
         }
     }
@@ -910,26 +912,32 @@ fun GlobalProfileRoute(
     var loading by remember { mutableStateOf(true) }
     var fullName by remember { mutableStateOf(session.user.name) }
     var userIdCode by remember { mutableStateOf(session.user.agentCode) }
-    var phone by remember { mutableStateOf("08XXXXXXXXX") }
+    var phone by remember { mutableStateOf("Belum diisi") }
     var email by remember { mutableStateOf(session.user.email) }
-    var familySince by remember { mutableStateOf("30-10-2026") }
-    var totalDeals by remember { mutableIntStateOf(10) }
-    var dealsPerMonth by remember { mutableDoubleStateOf(2.4) }
+    val familySince = "Belum tersedia" // Tanggal bergabung belum ada dalam UserProfileDto.
+    var totalDeals by remember { mutableIntStateOf(0) }
+    var dealsPerMonth by remember { mutableDoubleStateOf(0.0) }
+    var accountActive by remember { mutableStateOf(true) }
+    var loadingError by remember { mutableStateOf<String?>(null) }
+    var reloadKey by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(session.token) {
+    LaunchedEffect(session.token, reloadKey) {
         loading = true
+        loadingError = null
         ApiService.globalProfile(session.token) { result ->
             loading = false
             result.onSuccess { payload ->
                 fullName = payload.profile.name.ifBlank { session.user.name }
                 userIdCode = payload.profile.agentCode.ifBlank { session.user.agentCode }
-                phone = payload.profile.phoneNumber?.ifBlank { "08XXXXXXXXX" } ?: "08XXXXXXXXX"
+                phone = payload.profile.phoneNumber?.takeIf { it.isNotBlank() } ?: "Belum diisi"
                 email = payload.profile.email.ifBlank { session.user.email }
+                accountActive = payload.profile.isActive
                 totalDeals = payload.totalDeals
                 dealsPerMonth = payload.dealsPerMonth
             }
             result.onFailure { err ->
                 if (err is ApiError && err.unauthorized) onExpired()
+                else loadingError = err.message ?: "Gagal memuat profile"
             }
         }
     }
@@ -952,6 +960,10 @@ fun GlobalProfileRoute(
         performanceText = "$dealsPerMonth deals/month",
         centerBarLabel = centerBarLabel,
         loading = loading,
+        accountActive = accountActive,
+        notificationToken = session.token,
+        loadingError = loadingError,
+        onReload = { reloadKey++ },
         onBack = onBack,
         onNotificationBellClick = onNotificationBellClick,
         onHome = onHome,
@@ -964,235 +976,47 @@ fun GlobalProfileRoute(
 fun GlobalProfileScreenContent(
     roleTitle: String = "Upline",
     headerUserName: String = "XXX",
-    profileName: String = "Travis Scott",
-    userIdCode: String = "bgret949-35ufrf",
-    phoneNumber: String = "08XXXXXXXXX",
-    email: String = "xx.xx@gmail.com",
-    familySince: String = "XX-XX-XXXX",
-    totalDeals: Int = 10,
-    performanceText: String = "2.4 deals/month",
+    profileName: String = "Agent Integra",
+    userIdCode: String = "UPL-001",
+    phoneNumber: String = "Belum diisi",
+    email: String = "agent@example.com",
+    familySince: String = "Belum tersedia",
+    totalDeals: Int = 0,
+    performanceText: String = "0.0 deals/month",
     centerBarLabel: String = "add project",
     loading: Boolean = false,
+    accountActive: Boolean = true,
+    notificationToken: String? = null,
+    loadingError: String? = null,
+    onReload: () -> Unit = {},
     onBack: () -> Unit = {},
     onNotificationBellClick: () -> Unit = {},
     onHome: () -> Unit = {},
     onCenterClick: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
-    Scaffold(
-        containerColor = GlobalBgGray,
-        bottomBar = {
-            RoleBottomBar(
-                centerLabel = centerBarLabel,
-                onHome = onHome,
-                onCenterClick = onCenterClick,
-                onProfile = {}
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(GlobalBgGray)
-        ) {
-            RoleTopBar(
-                roleTitle = roleTitle,
-                userName = headerUserName,
-                onNotificationClick = onNotificationBellClick
-            )
-
-            // Sub-header: Blue Back Button + "My Profile"
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp)
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(GlobalPrimaryBlue)
-                        .clickable { onBack() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                Text(
-                    text = "My Profile",
-                    color = Color.Black,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Normal
-                )
-            }
-
-            // Main White Rounded Card Container
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp)
-                    .clip(RoundedCornerShape(28.dp))
-                    .border(1.dp, Color.Black, RoundedCornerShape(28.dp))
-                    .background(Color.White)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 26.dp)
-            ) {
-                // Avatar + Name & User ID Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(82.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFE0E6EE))
-                            .border(1.dp, Color(0xFFB0BEC5), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Face,
-                            contentDescription = "Profile Avatar",
-                            tint = Color(0xFF455A64),
-                            modifier = Modifier.size(54.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(18.dp))
-
-                    Column {
-                        Text(
-                            text = profileName,
-                            color = Color.Black,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "User ID: $userIdCode",
-                            color = Color(0xFF555555),
-                            fontSize = 10.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Contact Information Lines
-                Text(
-                    text = "Phone number: $phoneNumber",
-                    color = Color.Black,
-                    fontSize = 12.sp
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Email: $email",
-                    color = Color.Black,
-                    fontSize = 12.sp
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Family Since: $familySince",
-                    color = Color.Black,
-                    fontSize = 12.sp
-                )
-
-                Spacer(modifier = Modifier.height(22.dp))
-
-                // Two Stat Cards: Total Deals & Performance
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    LeftAccentCard(
-                        accentColor = GlobalDarkBlue,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(64.dp),
-                        cornerRadius = 10.dp,
-                        leftBorderWidth = 4.dp,
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            Text(
-                                text = "Total Deals",
-                                color = Color.Black,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.align(Alignment.TopStart)
-                            )
-                            Text(
-                                text = totalDeals.toString(),
-                                color = Color.Black,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                modifier = Modifier.align(Alignment.BottomEnd)
-                            )
-                        }
-                    }
-
-                    LeftAccentCard(
-                        accentColor = GlobalGreen,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(64.dp),
-                        cornerRadius = 10.dp,
-                        leftBorderWidth = 4.dp,
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            Text(
-                                text = "Performance",
-                                color = Color.Black,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.align(Alignment.TopStart)
-                            )
-                            Text(
-                                text = performanceText,
-                                color = Color.Black,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.align(Alignment.BottomEnd),
-                                maxLines = 1
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.weight(1f, fill = false))
-                Spacer(modifier = Modifier.height(36.dp))
-
-                // Logout Button inside Profile Screen
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(46.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(GlobalRed)
-                        .clickable { onLogout() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Log Out",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-    }
+    IntegraModernProfileScreen(
+        roleTitle = roleTitle,
+        headerUserName = headerUserName,
+        profileName = profileName,
+        userIdCode = userIdCode,
+        phoneNumber = phoneNumber,
+        email = email,
+        familySince = familySince,
+        totalDeals = totalDeals,
+        performanceText = performanceText,
+        centerBarLabel = centerBarLabel,
+        loading = loading,
+        accountActive = accountActive,
+        notificationToken = notificationToken,
+        loadingError = loadingError,
+        onReload = onReload,
+        onBack = onBack,
+        onNotificationBellClick = onNotificationBellClick,
+        onHome = onHome,
+        onCenterClick = onCenterClick,
+        onLogout = onLogout
+    )
 }
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 740)

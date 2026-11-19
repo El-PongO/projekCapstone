@@ -1,19 +1,18 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
-
-const Project = sequelize.define("Project", {
+module.exports = sequelize.define("Project", {
   id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true },
-  project_code: { type: DataTypes.STRING(50), allowNull: false },
-  agent_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
-  client_name: { type: DataTypes.STRING(255), allowNull: false },
-  status: { type: DataTypes.STRING(20), allowNull: false },
-  execution_stage: { type: DataTypes.STRING(30), allowNull: false },
-  deal_value: { type: DataTypes.DECIMAL(15, 2), allowNull: false },
-  calculated_commission: { type: DataTypes.DECIMAL(15, 2), allowNull: false }
-}, {
-  tableName: "projects",
-  underscored: true,
-  timestamps: true,
-});
-
-module.exports = Project;
+  project_code: DataTypes.STRING(50),
+  agent_id: DataTypes.BIGINT.UNSIGNED,
+  client_id: DataTypes.BIGINT.UNSIGNED,
+  client_name: DataTypes.STRING(255),
+  client_phone: DataTypes.STRING(20),
+  client_email: DataTypes.STRING(100),
+  status: DataTypes.ENUM("follow_up","deal","no_deal","cancelled"),
+  execution_stage: DataTypes.ENUM("negotiation","proposal_sent","app_creation","implementation","completed"),
+  deal_value: DataTypes.DECIMAL(15,2),
+  cancel_reason: DataTypes.TEXT,
+  deal_date: DataTypes.DATEONLY,
+  created_at: DataTypes.DATE,
+  updated_at: DataTypes.DATE
+}, { tableName: "projects", timestamps: false, freezeTableName: true });

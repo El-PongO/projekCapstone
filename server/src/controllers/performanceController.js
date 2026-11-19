@@ -1,148 +1,26 @@
-
-const Project = require("../models/Project");
-const User = require("../models/User");
-
-// Mengambil tahun dan bulan sesuai WIB
-function getCurrentMonth() {
-    const parts = new Intl.DateTimeFormat("en-US", {
-        timeZone: "Asia/Jakarta",
-        year: "numeric",
-        month: "2-digit"
-    }).formatToParts(new Date());
-
-    const year = parts.find(p => p.type === "year").value;
-    const month = parts.find(p => p.type === "month").value;
-
-    return `${year}-${month}`;
-}
-
-// GET /api/performance
-const getPerformance = async (req, res) => {
-    try {
-        // ID berasal dari JWT yang sudah diverifikasi.
-        const userId = req.user.id;
-
-        // Ambil data pengguna
-        const user = await User.findByPk(userId);
-
-        if (!user || !user.is_active) {
-            return res.status(401).json({
-                error: "Akun tidak ditemukan atau tidak aktif"
-            });
-        }
-
-        // Ambil proyek milik agen yang login saja
-        const projects = await Project.findAll({
-            where: {
-                agent_id: userId
-            },
-            order: [
-                ["created_at", "DESC"],
-                ["id", "DESC"]
-            ]
-        });
-
-        // ======================================
-        // 1. MY SALES REPORT
-        // ======================================
-
-        const sales = projects.map(project => ({
-            projectCode: project.project_code,
-            clientName: project.client_name,
-            status: project.status,
-            stage: project.execution_stage,
-            dealValue: Number(project.deal_value || 0),
-            date: project.createdAt
-        }));
-
-        // ======================================
-        // 2. PROJECT DEAL
-        // ======================================
-
-        const dealProjects = projects.filter(
-            project => project.status === "deal"
-        );
-
-        const totalDealsMade = dealProjects.length;
-
-        // ======================================
-        // 3. MY INCOME
-        // ======================================
-
-        const income = dealProjects.map(project => ({
-            projectCode: project.project_code,
-            clientName: project.client_name,
-            dealValue: Number(project.deal_value || 0),
-            commission: Number(
-                project.calculated_commission || 0
-            ),
-            ratePercent: Number(user.rate_value_percent || 0),
-            date: project.deal_date || project.updatedAt
-        }));
-
-        // ======================================
-        // 4. TOTAL SALES
-        // ======================================
-
-        const totalSales = dealProjects.reduce(
-            (total, project) =>
-                total + Number(project.deal_value || 0),
-            0
-        );
-
-        // ======================================
-        // 5. TOTAL INCOME
-        // ======================================
-
-        const totalIncome = dealProjects.reduce(
-            (total, project) =>
-                total + Number(project.calculated_commission || 0),
-            0
-        );
-
-        // ======================================
-        // 6. THIS MONTH'S CUT
-        // ======================================
-
-        const currentMonth = getCurrentMonth();
-
-        const monthlyProjects = dealProjects.filter(project => {
-            if (!project.deal_date) return false;
-
-            return String(project.deal_date)
-                .startsWith(currentMonth);
-        });
-
-        const monthlyCut = monthlyProjects.reduce(
-            (total, project) =>
-                total + Number(project.calculated_commission || 0),
-            0
-        );
-
-        // ======================================
-        // 7. RESPONSE
-        // ======================================
-
-        return res.status(200).json({
-            stats: {
-                totalSales,
-                totalIncome,
-                totalDealsMade,
-                monthlyCut
-            },
-            sales,
-            income
-        });
-
-    } catch (error) {
-        console.error("Get Performance Error:", error);
-
-        return res.status(500).json({
-            error: "Gagal mengambil data My Performance"
-        });
-    }
-};
-
-module.exports = {
-    getPerformance
-};
+const {num,monthWib}=require('../utils/common');
+const {Project,Commission}=require('../models');
+module.exports={ get: async(req,res)=>{
+ const [projects,commissions]=await Promise.all([
+  Project.findAll({where:{agent_id:req.user.id},order:[['created_at','DESC']],limit:500}),
+  Commission.findAll({where:{agent_id:req.user.id}})
+ ]);
+ const cMap=new Map(commissions.map(c=>[Number(c.project_id),c]));
+ const sales=projects.map(p=>({projectCode:p.project_code,clientName:p.client_name,status:p.status,stage:p.execution_stage,dealValue:num(p.deal_value),date:p.created_at}));
+ const income=projects.filter(p=>cMap.has(Number(p.id))).map(p=>{
+  const c=cMap.get(Number(p.id));return {projectCode:p.project_code,clientName:p.client_name,commission:num(c.total_commission_amount),ratePercent:num(c.commission_rate_percent),date:c.created_at, payoutStatus:c.payout_status};
+ });
+ // Income uses full commissions owned by this agent, not just commissions on personally-owned projects (Upline may receive team share).
+ const commissionProjects=await Project.findAll({where:{id:{[require('sequelize').Op.in]:commissions.map(c=>c.project_id)}}});
+ const projectLookup=new Map(commissionProjects.map(p=>[Number(p.id),p]));
+ const allIncome=commissions.map(c=>{
+  const p=projectLookup.get(Number(c.project_id));const own=Number(p?.agent_id)===Number(req.user.id);
+  return {projectCode:p?.project_code||'-',clientName:own?p?.client_name||'-':`Komisi Tim ${p?.project_code||''}`,commission:num(c.total_commission_amount),ratePercent:num(c.commission_rate_percent),date:p?.deal_date||c.created_at,payoutStatus:c.payout_status};
+ });
+ const dealProjects=projects.filter(p=>p.status==='deal');const month=monthWib();
+ const monthlyCut=commissions.reduce((sum,c)=>{
+  const p=projectLookup.get(Number(c.project_id));return p?.deal_date&&String(p.deal_date).slice(0,7)===month?sum+num(c.total_commission_amount):sum;
+ },0);
+ const totalIncome=allIncome.reduce((s,x)=>s+x.commission,0);
+ res.json({stats:{totalSales:dealProjects.reduce((s,p)=>s+num(p.deal_value),0),totalIncome,totalDealsMade:dealProjects.length,monthlyCut},sales,income:allIncome});
+} };
