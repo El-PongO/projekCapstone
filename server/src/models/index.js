@@ -1,0 +1,22 @@
+module.exports = {
+  User: require("./User"),
+  AgentHierarchy: require("./AgentHierarchy"),
+  Category: require("./Category"),
+  Item: require("./Item"),
+  Project: require("./Project"),
+  ProjectItem: require("./ProjectItem"),
+  ProjectActivityLog: require("./ProjectActivityLog"),
+  Payment: require("./Payment"),
+  Commission: require("./Commission"),
+  Proposal: require("./Proposal"),
+  Notification: require("./Notification"),
+  ProjectApproval: require("./ProjectApproval"),
+  FollowUpTask: require("./FollowUpTask"),
+  ProjectMilestone: require("./ProjectMilestone"),
+  ProjectDocument: require("./ProjectDocument"),
+  Client: require("./Client"),
+  Meeting: require("./Meeting"),
+  Invoice: require("./Invoice"),
+  CommissionPayout: require("./CommissionPayout"),
+  ProposalItem: require("./ProposalItem")
+};

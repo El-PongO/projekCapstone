@@ -1,0 +1,9 @@
+node_modules/
+.env
+uploads/documents/*
+uploads/proposals/*
+!uploads/documents/.gitkeep
+!uploads/proposals/.gitkeep
+*.log
+*.zip
+*service-account*.json

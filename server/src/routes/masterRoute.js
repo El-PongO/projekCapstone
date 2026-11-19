@@ -1,0 +1,13 @@
+const r=require('express').Router();
+const {Category,Item,ProjectItem}=require('../models');
+const {auth,roles}=require('../middleware/auth');const {wrap,fail,id,nonempty,optional,amount,page}=require('../utils/common');
+r.use(auth);
+r.get('/categories',wrap(async(req,res)=>res.json(await Category.findAll({order:[['category_name','ASC']]}))));
+r.post('/categories',roles('admin'),wrap(async(req,res)=>{const x=await Category.create({category_name:nonempty(req.body.categoryName,100),description:optional(req.body.description,2000)});res.status(201).json(x);}));
+r.patch('/categories/:id',roles('admin'),wrap(async(req,res)=>{const x=await Category.findByPk(id(req.params.id));if(!x)throw fail(404,'Kategori tidak ditemukan');const v={};if(req.body.categoryName!==undefined)v.category_name=nonempty(req.body.categoryName,100);if(req.body.description!==undefined)v.description=optional(req.body.description,2000);await x.update(v);res.json(x);}));
+r.delete('/categories/:id',roles('admin'),wrap(async(req,res)=>{const x=await Category.findByPk(id(req.params.id));if(!x)throw fail(404,'Kategori tidak ditemukan');await x.destroy();res.json({ok:true});}));
+r.get('/items',wrap(async(req,res)=>res.json(await Item.findAll({order:[['item_name','ASC']],...page(req)}))));
+r.post('/items',roles('admin'),wrap(async(req,res)=>{const c=await Category.findByPk(id(req.body.categoryId));if(!c)throw fail(400,'Category tidak ditemukan');const x=await Item.create({category_id:c.id,item_code:nonempty(req.body.itemCode,50),item_name:nonempty(req.body.itemName),base_price:amount(req.body.basePrice||0),description:optional(req.body.description,2000)});res.status(201).json(x);}));
+r.patch('/items/:id',roles('admin'),wrap(async(req,res)=>{const x=await Item.findByPk(id(req.params.id));if(!x)throw fail(404,'Item tidak ditemukan');const v={};if(req.body.categoryId!==undefined){const c=await Category.findByPk(id(req.body.categoryId));if(!c)throw fail(400,'Category tidak ditemukan');v.category_id=c.id;}if(req.body.itemName!==undefined)v.item_name=nonempty(req.body.itemName);if(req.body.basePrice!==undefined)v.base_price=amount(req.body.basePrice);if(req.body.description!==undefined)v.description=optional(req.body.description,2000);await x.update(v);res.json(x);}));
+r.delete('/items/:id',roles('admin'),wrap(async(req,res)=>{const x=await Item.findByPk(id(req.params.id));if(!x)throw fail(404,'Item tidak ditemukan');await x.destroy();res.json({ok:true});}));
+module.exports=r;
