@@ -1030,3 +1030,23 @@ fun GlobalDealsDetailsPreview() {
 fun GlobalProfilePreview() {
     GlobalProfileScreenContent()
 }
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 740)
+@Composable
+fun RoleTopBarPreview() {
+    RoleTopBar(
+        roleTitle = "Admin",
+        userName = "Admin User"
+    )
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 740)
+@Composable
+fun RoleBottomBarPreview() {
+    RoleBottomBar(
+        centerLabel = "add project",
+        onHome = {},
+        onCenterClick = {},
+        onProfile = {}
+    )
+}

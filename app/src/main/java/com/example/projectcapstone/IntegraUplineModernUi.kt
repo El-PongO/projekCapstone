@@ -70,7 +70,7 @@ private fun SectionHeading(title: String, subtitle: String? = null) {
 }
 
 @Composable
-private fun ModernHeader(userName: String, pageTitle: String?, onBack: () -> Unit) {
+private fun ModernHeader(userName: String, pageTitle: String?, onBack: () -> Unit, onNotificationClick: () -> Unit = {}) {
     Column(
         modifier = Modifier.fillMaxWidth()
             .background(Color.White)
@@ -89,7 +89,8 @@ private fun ModernHeader(userName: String, pageTitle: String?, onBack: () -> Uni
             Text("Integra Agency", color = Ink, fontWeight = FontWeight.ExtraBold,
                 fontSize = 16.sp, modifier = Modifier.weight(1f))
             Box(
-                Modifier.size(37.dp).clip(CircleShape).background(PageBg),
+                Modifier.size(37.dp).clip(CircleShape).background(PageBg)
+                    .clickable { onNotificationClick() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.Notifications, contentDescription = "Notifications",
@@ -174,6 +175,7 @@ private fun ModernPage(
     onHome: () -> Unit = {},
     onAddProject: () -> Unit = {},
     onProfile: () -> Unit = {},
+    onNotificationClick: () -> Unit = {},
     addEnabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -188,7 +190,7 @@ private fun ModernPage(
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            ModernHeader(userName, title, onBack)
+            ModernHeader(userName, title, onBack, onNotificationClick)
             Column(
                 Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 18.dp),
@@ -274,9 +276,16 @@ fun IntegraModernUplineHome(
     onSeeActivityDetails: (UplineRecentActivityUi) -> Unit,
     onHome: () -> Unit,
     onAddProject: () -> Unit,
-    onProfile: () -> Unit
+    onProfile: () -> Unit,
+    onNotificationClick: () -> Unit = {}
 ) {
-    ModernPage(userName, onHome = onHome, onAddProject = onAddProject, onProfile = onProfile) {
+    ModernPage(
+        userName = userName,
+        onHome = onHome,
+        onAddProject = onAddProject,
+        onProfile = onProfile,
+        onNotificationClick = onNotificationClick
+    ) {
         Column(
             Modifier.fillMaxWidth()
                 .background(Brush.horizontalGradient(listOf(Color(0xFFE6EFFF), Color(0xFFF3F7FF))), CardRadius)

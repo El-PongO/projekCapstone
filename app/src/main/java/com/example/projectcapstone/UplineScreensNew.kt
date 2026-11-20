@@ -268,6 +268,7 @@ private fun UplineHomeRoute(
     var activities by remember { mutableStateOf<List<UplineRecentActivityUi>>(emptyList()) }
     var counterOfferDeal by remember { mutableStateOf<UplineActiveDealUi?>(null) }
     var counterOfferInput by remember { mutableStateOf("") }
+    var showNotificationsDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(session.token, refreshKey, localRefresh) {
         loading = true
@@ -320,6 +321,14 @@ private fun UplineHomeRoute(
         }
     }
 
+    if (showNotificationsDialog) {
+        RoleNotificationsDialog(
+            roleTitle = "Upline",
+            token = session.token,
+            onDismiss = { showNotificationsDialog = false }
+        )
+    }
+
     UplineHomeScreenContentNew(
         userName = session.user.name,
         monthlyCutFormatted = uplineMoney(monthlyCut),
@@ -366,7 +375,8 @@ private fun UplineHomeRoute(
         },
         onHome = {},
         onAddProject = onNavigateAddProject,
-        onProfile = onOpenProfile
+        onProfile = onOpenProfile,
+        onNotificationClick = { showNotificationsDialog = true }
     )
 
     counterOfferDeal?.let { deal ->
@@ -422,12 +432,13 @@ fun UplineHomeScreenContentNew(
     onSeeActivityDetails: (UplineRecentActivityUi) -> Unit = {},
     onHome: () -> Unit = {},
     onAddProject: () -> Unit = {},
-    onProfile: () -> Unit = {}
+    onProfile: () -> Unit = {},
+    onNotificationClick: () -> Unit = {}
 ) {
     IntegraModernUplineHome(
         userName, monthlyCutFormatted, projectsHeld, activeDeals, activities,
         onPerformanceClick, onDownlineClick, onCrmClick, onDealActionClick,
-        onSeeActivityDetails, onHome, onAddProject, onProfile
+        onSeeActivityDetails, onHome, onAddProject, onProfile, onNotificationClick
     )
 }
 

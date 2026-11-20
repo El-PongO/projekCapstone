@@ -74,6 +74,8 @@ fun UplineDownlinesScreen(
         mutableIntStateOf(0)
     }
 
+    var showNotificationsDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(session.token, refresh) {
         loading = true
         error = ""
@@ -108,6 +110,14 @@ fun UplineDownlinesScreen(
                     error = t.message ?: "Server tidak dapat dihubungi"
                 }
             })
+    }
+
+    if (showNotificationsDialog) {
+        RoleNotificationsDialog(
+            roleTitle = "Upline",
+            token = session.token,
+            onDismiss = { showNotificationsDialog = false }
+        )
     }
 
     Scaffold(
@@ -157,7 +167,8 @@ fun UplineDownlinesScreen(
                     modifier = Modifier
                         .size(34.dp)
                         .clip(CircleShape)
-                        .background(TeamBlue),
+                        .background(TeamBlue)
+                        .clickable { showNotificationsDialog = true },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(

@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.tooling.preview.Preview
 
 // UI profile modern. Data & API tetap dikelola oleh GlobalProfileRoute().
 private val ProfBlue = Color(0xFF0758F7)
@@ -353,7 +354,7 @@ private fun ProfileHeroCard(name: String, code: String, role: String, isActive: 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier.size(74.dp)
-                        .background(Color.White.copy(alpha = 0.18f), CircleShape)
+                        .background(Color.Black.copy(alpha = 0.18f), CircleShape)
                         .border(2.dp, Color.White.copy(alpha = 0.5f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
@@ -514,4 +515,16 @@ private fun ProfileModernBottomBar(
             }
         }
     }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 740)
+@Composable
+fun ThisPreview() {
+    GlobalDealsDetailsScreenContent()
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 740)
+@Composable
+fun ThatPreview() {
+    GlobalProfileScreenContent()
 }
