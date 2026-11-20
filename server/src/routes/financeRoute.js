@@ -53,10 +53,25 @@ commissions.get('/:id',wrap(async(req,res)=>{
  res.json({commission:c,paidAmount:round(rows.reduce((s,p)=>s+num(p.amount_paid),0)),payouts:rows});
 }));
 commissions.post('/:id/approve',roles('admin'),wrap(async(req,res)=>{
- const c=await Commission.findByPk(id(req.params.id));if(!c)throw fail(404,'Komisi tidak ditemukan');
- if(c.payout_status!=='pending')throw fail(409,'Komisi sudah diproses');
- await c.update({payout_status:'approved'});await notify(c.agent_id,'Komisi Disetujui',`Komisi proyek ${c.project_id} disetujui`,'commission');
- await push(c.agent_id,'Komisi Disetujui','Komisi Anda sudah disetujui');res.json(c);
+ const result=await db.transaction(async transaction=>{
+  const c=await Commission.findByPk(id(req.params.id),{transaction,lock:transaction.LOCK.UPDATE});
+  if(!c)throw fail(404,'Komisi tidak ditemukan');
+  if(c.payout_status!=='pending')throw fail(409,'Komisi sudah diproses');
+  const project=await Project.findByPk(c.project_id,{transaction,lock:transaction.LOCK.UPDATE});
+  if(!project||project.status!=='deal')throw fail(409,'Hanya komisi proyek Deal yang dapat disetujui');
+  const bills=await Invoice.findAll({where:{project_id:c.project_id},transaction,lock:transaction.LOCK.UPDATE});
+  if(!bills.length)throw fail(409,'Komisi belum dapat disetujui: invoice proyek belum tersedia');
+  const receipt=await Payment.findAll({where:{invoice_id:{[Op.in]:bills.map(b=>b.id)}},transaction});
+  const paid=new Map();for(const p of receipt)paid.set(Number(p.invoice_id),(paid.get(Number(p.invoice_id))||0)+num(p.amount_paid));
+  // Kebijakan konservatif: semua invoice proyek harus lunas sebelum komisi approved.
+  if(bills.some(b=>b.status!=='paid'||round(paid.get(Number(b.id))||0)<round(num(b.total_amount))))
+   throw fail(409,'Komisi menunggu pelunasan dan verifikasi seluruh invoice klien');
+  await c.update({payout_status:'approved'},{transaction});
+  await notify(c.agent_id,'Komisi Disetujui',`Komisi proyek ${c.project_id} disetujui`,'commission',transaction);
+  return {commission:c,agentId:c.agent_id};
+ });
+ await push(result.agentId,'Komisi Disetujui','Komisi Anda sudah disetujui');
+ res.json(result.commission);
 }));
 // COMMISSION PAYOUTS = uang keluar untuk agen
 payouts.get('/',roles('admin'),wrap(async(req,res)=>res.json(await CommissionPayout.findAll({order:[['payout_date','DESC']],...page(req)}))));

@@ -76,4 +76,19 @@ r.get('/documents/:id/download',wrap(async(req,res)=>{
  const filename=path.basename(d.file_path);const loc=path.join(uploadDir,filename);if(!fs.existsSync(loc))throw fail(404,'File fisik tidak ditemukan');res.download(loc,d.original_filename);
 }));
 r.delete('/documents/:id',wrap(async(req,res)=>{const d=await ProjectDocument.findByPk(id(req.params.id));if(!d)throw fail(404,'Dokumen tidak ditemukan');await findProject(req.user,d.project_id,true);await d.destroy();fs.rmSync(path.join(uploadDir,path.basename(d.file_path)),{force:true});res.json({ok:true});}));
+// Satu endpoint ringkas untuk tampilan progress, jadwal dan lampiran pada aplikasi.
+r.get('/projects/:id/overview',wrap(async(req,res)=>{
+ const p=await findProject(req.user,req.params.id);
+ const owner=req.user.role==='admin'||Number(p.agent_id)===Number(req.user.id);
+ const [milestones,tasks,meetings,documents]=await Promise.all([
+  ProjectMilestone.findAll({where:{project_id:p.id},order:[['due_date','ASC'],['id','ASC']]}),
+  FollowUpTask.findAll({where:{project_id:p.id},order:[['due_at','ASC']]}),
+  Meeting.findAll({where:{project_id:p.id},order:[['meeting_at','ASC']]}),
+  ProjectDocument.findAll({where:{project_id:p.id},attributes:['id','document_type','original_filename','created_at']})
+ ]);
+ const completed=milestones.filter(x=>x.status==='completed').length;
+ res.json({projectId:Number(p.id),progressPercent:milestones.length?Math.round(100*completed/milestones.length):0,
+  completedMilestones:completed,totalMilestones:milestones.length,canEdit:owner,
+  milestones:owner?milestones:[],tasks:owner?tasks:[],meetings:owner?meetings:[],documents:owner?documents:[]});
+}));
 module.exports=r;

@@ -30,6 +30,7 @@ app.use('/api/commissions',finance.commissions);
 app.use('/api/commission-payouts',finance.payouts);
 app.use('/api/proposals',require('./src/routes/proposalRoute'));
 app.use('/api/notifications',require('./src/routes/notificationRoute'));
+app.use('/api/leaderboard',require('./src/routes/leaderboardRoute'));
 app.use('/api/reports',require('./src/routes/reportRoute'));
 app.use((req,res)=>res.status(404).json({error:'Endpoint tidak ditemukan'}));
 app.use((err,req,res,next)=>{
@@ -46,6 +47,7 @@ async function start(){
  await db.authenticate();initFirebase();
  const port=Number(process.env.PORT||3001);
  app.listen(port,'0.0.0.0',()=>console.log(`Backend Integra Agency berjalan http://127.0.0.1:${port}`));
+ require('./src/jobs/scheduler').startReminderScheduler();
 }
 if(require.main===module)start().catch(e=>{console.error('Gagal memulai Backend:',e.message);process.exit(1);});
 module.exports=app;

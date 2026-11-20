@@ -16,7 +16,19 @@ async function notify(userId,title,message,type="system",transaction){
 async function push(userId,title,message){
  if(!firebase)return false;
  const user=await User.findByPk(userId);if(!user?.fcm_token)return false;
- try{await firebase.messaging().send({token:user.fcm_token,notification:{title,body:message}});return true;}
- catch(e){console.error("FCM gagal:",e.message);return false;}
+ try{
+  await firebase.messaging().send({
+   token:user.fcm_token,
+   notification:{title,body:message},
+   android:{priority:'high',notification:{channelId:'integra_agency_push'}}
+  });
+  return true;
+ }catch(e){
+  console.error('FCM gagal:',e.code||e.message);
+  if(['messaging/registration-token-not-registered','messaging/invalid-registration-token'].includes(e.code)){
+   await user.update({fcm_token:null}).catch(()=>{});
+  }
+  return false;
+ }
 }
 module.exports={initFirebase,notify,push};
