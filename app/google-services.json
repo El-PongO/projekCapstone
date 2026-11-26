@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "366126454047",
+    "project_id": "integra-agency-capstone",
+    "storage_bucket": "integra-agency-capstone.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:366126454047:android:9e44475ed6aa2203698c2a",
+        "android_client_info": {
+          "package_name": "com.example.projectcapstone"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBo4HcAcZG45CFxvGlmSlz4cCrHYYlXREI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
