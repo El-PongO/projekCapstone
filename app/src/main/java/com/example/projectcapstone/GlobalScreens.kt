@@ -514,6 +514,7 @@ fun GlobalDealsDetailsRoute(
 
     val context = LocalContext.current
     var generatingPdf by remember { mutableStateOf(false) }
+    var proposalSavedPath by remember { mutableStateOf<String?>(null) }
     var showWorkspace by remember { mutableStateOf(false) }
     var showDealWorkflow by remember { mutableStateOf(false) }
 
@@ -535,7 +536,8 @@ fun GlobalDealsDetailsRoute(
         onGenerateProposalPdf = {
             if (selection.projectId <= 0 || generatingPdf) return@GlobalDealsDetailsScreenContent
             generatingPdf = true
-            ApiService.generateOrGetProposal(
+            ApiService.generateProposal(
+                context = context,
                 token = session.token,
                 projectId = selection.projectId,
                 clientName = clientName,
@@ -544,18 +546,12 @@ fun GlobalDealsDetailsRoute(
                 details = dealDetails
             ) { res ->
                 generatingPdf = false
-                res.onSuccess { prop ->
-                    Toast.makeText(
-                        context,
-                        "Proposal PDF Ready: ${prop.proposalNumber} (${prop.pdfFilePath})",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
+                res.onSuccess { savedPath -> proposalSavedPath = savedPath }
                 res.onFailure { err ->
                     Toast.makeText(
                         context,
-                        err.message ?: "Proposal generated on server",
-                        Toast.LENGTH_SHORT
+                        err.message ?: "Failed to generate or download the proposal PDF",
+                        Toast.LENGTH_LONG
                     ).show()
                 }
             }
@@ -597,6 +593,21 @@ fun GlobalDealsDetailsRoute(
     if (showWorkspace && selection.projectId > 0L) {
         IntegraProjectWorkspaceDialog(projectId = selection.projectId, token = session.token,
             onDismiss = { showWorkspace = false })
+    }
+    proposalSavedPath?.let { path ->
+        AlertDialog(
+            onDismissRequest = { proposalSavedPath = null },
+            title = { Text("Proposal downloaded successfully", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("The proposal PDF was saved to your device.")
+                    Text(path, fontSize = 12.sp, color = Color.DarkGray)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { proposalSavedPath = null }) { Text("OK") }
+            }
+        )
     }
 
 }

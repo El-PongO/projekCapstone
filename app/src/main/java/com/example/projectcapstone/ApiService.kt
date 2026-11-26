@@ -1320,22 +1320,20 @@ object ApiService {
         }
     }
 
-    fun generateOrGetProposal(
+    fun generateProposal(
+        context: Context,
         token: String,
         projectId: Long,
         clientName: String,
         productName: String,
         price: Double,
         details: String,
-        done: (Result<ProposalDto>) -> Unit
+        done: (Result<String>) -> Unit
     ) {
         scope.launch {
             val result = try {
                 val bearer = "Bearer $token"
-                val existing = runCatching {
-                    App.retrofitService.getProposals(bearer).firstOrNull { it.projectId == projectId }
-                }.getOrNull()
-                val proposal = existing ?: App.retrofitService.createProposal(
+                val proposal = App.retrofitService.createProposal(
                     bearer,
                     projectId,
                     CreateProposalRequest(
@@ -1351,17 +1349,21 @@ object ApiService {
                     )
                 ).proposal
 
-                // Also download and save the generated PDF into the phone's Downloads folder
-                val ctx = App.appContext
-                if (ctx != null && proposal.id > 0) {
-                    runCatching {
-                        val body = App.retrofitService.downloadProposalPdf(bearer, proposal.id)
-                        val bytes = body.bytes()
-                        val safeNum = proposal.proposalNumber.ifBlank { "PRP-$projectId" }
-                        saveBytesToDownloads(ctx, "$safeNum.pdf", "application/pdf", bytes)
-                    }
-                }
-                Result.success(proposal)
+                if (proposal.id <= 0) throw IOException("The proposal was created without a valid ID")
+                val body = App.retrofitService.downloadProposalPdf(bearer, proposal.id)
+                val bytes = body.bytes()
+                if (bytes.isEmpty()) throw IOException("The downloaded proposal PDF is empty")
+                val safeNum = proposal.proposalNumber
+                    .ifBlank { "PRP-$projectId" }
+                    .replace(Regex("[^A-Za-z0-9._-]"), "_")
+                Result.success(
+                    saveBytesToDownloads(
+                        context.applicationContext,
+                        "$safeNum.pdf",
+                        "application/pdf",
+                        bytes
+                    )
+                )
             } catch (error: Exception) {
                 Result.failure(errorMessage(error))
             }
