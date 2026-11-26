@@ -3,6 +3,8 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
+
+    id("com.google.gms.google-services")
 }
 
 val props = Properties().apply {
@@ -52,4 +54,8 @@ dependencies {
     implementation(libs.coroutines.android)
     implementation(libs.compose.material.icons.extended)
     implementation(libs.material)
+
+    implementation(platform("com.google.firebase:firebase-bom:35.2.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging")
 }

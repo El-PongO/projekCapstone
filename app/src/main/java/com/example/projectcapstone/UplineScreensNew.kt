@@ -333,9 +333,13 @@ private fun UplineHomeRoute(
             if (deal.id <= 0) return@UplineHomeScreenContentNew
             when (action) {
                 "no_deal" -> {
-                    ApiService.updateProjectStatus(session.token, deal.id, "no_deal", "No deal by Upline") {
-                        Toast.makeText(context, "Marked as No Deal", Toast.LENGTH_SHORT).show()
-                        localRefresh++
+                    ApiService.updateProjectStatus(session.token, deal.id, "no_deal", "No deal by Upline") { result ->
+                        result.onSuccess {
+                            Toast.makeText(context, "Marked as No Deal", Toast.LENGTH_SHORT).show()
+                            localRefresh++
+                        }.onFailure { error ->
+                            Toast.makeText(context, error.message ?: "Status gagal diubah", Toast.LENGTH_LONG).show()
+                        }
                     }
                 }
                 "counter" -> {
@@ -388,10 +392,14 @@ private fun UplineHomeRoute(
                     onClick = {
                         val v = counterOfferInput.toDoubleOrNull() ?: 0.0
                         if (v > 0 && deal.id > 0) {
-                            ApiService.counterOffer(session.token, deal.id, v, "Counter offer from Upline") {
-                                counterOfferDeal = null
-                                localRefresh++
-                                Toast.makeText(context, "Counter offer submitted!", Toast.LENGTH_SHORT).show()
+                            ApiService.counterOffer(session.token, deal.id, v, "Counter offer from Upline") { result ->
+                                result.onSuccess {
+                                    counterOfferDeal = null
+                                    localRefresh++
+                                    Toast.makeText(context, "Counter offer submitted!", Toast.LENGTH_SHORT).show()
+                                }.onFailure { error ->
+                                    Toast.makeText(context, error.message ?: "Counter offer gagal", Toast.LENGTH_LONG).show()
+                                }
                             }
                         }
                     }

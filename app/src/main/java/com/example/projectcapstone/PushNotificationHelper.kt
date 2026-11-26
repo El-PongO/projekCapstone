@@ -8,11 +8,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import java.util.UUID
+import android.util.Log
+import com.google.firebase.FirebaseApp
+import com.google.firebase.messaging.FirebaseMessaging
 
 object PushNotificationHelper {
     private const val CHANNEL_ID = "integra_agency_push"
@@ -35,44 +36,27 @@ object PushNotificationHelper {
         }
     }
 
-    /**
-     * Obtains a real FCM token if FirebaseMessaging is available on classpath,
-     * or generates a persistent device token so `POST /api/notifications/device`
-     * always populates `users.fcm_token` in MySQL (matching Sequence Diagram 3.6).
-     */
+    /** Tidak pernah menggunakan token buatan. Registrasi ke backend hanya token FCM asli. */
     fun obtainDeviceFcmToken(context: Context, onToken: (String) -> Unit) {
-        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        // Try FirebaseMessaging via reflection first if configured
-        val reflected = runCatching {
-            val clazz = Class.forName("com.google.firebase.messaging.FirebaseMessaging")
-            val instance = clazz.getMethod("getInstance").invoke(null)
-            val task = clazz.getMethod("getToken").invoke(instance)
-            val taskClass = Class.forName("com.google.android.gms.tasks.Task")
-            val isComplete = taskClass.getMethod("isComplete").invoke(task) as? Boolean ?: false
-            if (isComplete) {
-                taskClass.getMethod("getResult").invoke(task) as? String
-            } else null
-        }.getOrNull()
+        FirebaseMessaging.getInstance().token
+            .addOnSuccessListener { fcmToken ->
+                if (fcmToken.isNotBlank()) {
+                    context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                        .edit().putString("fcm_token", fcmToken).apply()
+                    Log.d("IntegraFCM", "FCM registration token tersedia (isi token tidak dicetak)")
+                    onToken(fcmToken)
+                }
+            }
+            .addOnFailureListener { error ->
+                Log.e("IntegraFCM", "Gagal mengambil FCM token: ${error.message}")
+            }
+    }
 
-        if (!reflected.isNullOrBlank()) {
-            prefs.edit().putString("fcm_token", reflected).apply()
-            onToken(reflected)
-            return
-        }
-
-        val existing = prefs.getString("fcm_token", null)
-        if (!existing.isNullOrBlank()) {
-            onToken(existing)
-            return
-        }
-
-        val androidId = runCatching {
-            Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-        }.getOrNull()?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString().replace("-", "")
-
-        val generated = "fcm_android_${Build.MODEL.replace(" ", "_")}_$androidId"
-        prefs.edit().putString("fcm_token", generated).apply()
-        onToken(generated)
+    fun deleteLocalFcmToken(context: Context) {
+        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().remove("fcm_token").apply()
+        FirebaseMessaging.getInstance().deleteToken()
+            .addOnFailureListener { error -> Log.w("IntegraFCM", "Gagal menghapus token lokal: ${error.message}") }
     }
 
     fun showSystemNotification(
@@ -101,7 +85,7 @@ object PushNotificationHelper {
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_stat_integra_notification)
             .setContentTitle(title.ifBlank { "PT Integra Cipta Data" })
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
@@ -123,6 +107,10 @@ object PushNotificationHelper {
         roleOrUserKey: String,
         notifications: List<NotificationDto>
     ) {
+        // Jika Firebase aktif, FCM yang mengatur status-bar notification.
+        // Polling tetap dapat dipakai untuk memperbarui daftar notifikasi di layar,
+        // tetapi tidak mem-post notification OS kedua kalinya.
+        if (FirebaseApp.getApps(context).isNotEmpty()) return
         if (notifications.isEmpty()) return
         val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val prefKey = "shown_ids_${roleOrUserKey.lowercase()}"

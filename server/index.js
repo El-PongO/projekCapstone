@@ -8,7 +8,7 @@ app.use(cors(origins.length?{origin:origins}:{origin:true}));
 app.use(express.json({limit:'1mb'}));
 app.use(express.urlencoded({extended:false,limit:'1mb'}));
 if(process.env.NODE_ENV!=='production')app.use((req,res,next)=>{res.on('finish',()=>console.log(`[API] ${req.method} ${req.path} ${res.statusCode}`));next();});
-app.get('/api/health',(req,res)=>res.json({ok:true,service:'Integra Agency Backend',tables:20}));
+app.get('/api/health',(req,res)=>res.json({ok:true,service:'Integra Agency Backend',tables:21}));
 app.get('/api/health/db',async(req,res)=>{try{await db.authenticate();res.json({ok:true,database:'connected'});}catch{res.status(503).json({ok:false,database:'unavailable'});}});
 app.use('/api/auth',require('./src/routes/authRoute'));
 app.use('/api/profile',require('./src/routes/profileRoute'));

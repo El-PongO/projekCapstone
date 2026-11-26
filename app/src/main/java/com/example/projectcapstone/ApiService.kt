@@ -43,93 +43,36 @@ object ApiService {
         return false
     }
 
+    // Token tidak boleh disimpan lintas akun/role untuk mengakses proyek orang lain.
     fun rememberSessionToken(role: String, agentCode: String, token: String) {
-        val r = role.trim().lowercase()
-        val c = agentCode.trim().uppercase()
-        if (r.isNotEmpty() && token.isNotEmpty()) roleTokens[r] = token
-        if (c.isNotEmpty() && token.isNotEmpty()) agentCodeTokens[c] = token
-        metaPrefs()?.edit()?.apply {
-            if (r.isNotEmpty()) putString("tok_role_$r", token)
-            if (c.isNotEmpty()) putString("tok_code_$c", token)
-            apply()
-        }
+        // Hapus token lama milik akun lain dari versi aplikasi sebelumnya.
+        val prefs = metaPrefs() ?: return
+        val editor = prefs.edit()
+        prefs.all.keys.filter { it.startsWith("tok_role_") || it.startsWith("tok_code_") ||
+            it.startsWith("cid_") || it.startsWith("ccode_") || it.startsWith("cagent_") }
+            .forEach { editor.remove(it) }
+        editor.apply()
+        roleTokens.clear()
+        agentCodeTokens.clear()
+        projectIdToClientName.clear()
+        projectCodeToClientName.clear()
+        agentCodeToClientName.clear()
     }
 
-    fun rememberProjectClient(
-        projectId: Long,
-        projectCode: String? = null,
-        agentCode: String? = null,
-        clientName: String?
-    ) {
-        if (clientName.isNullOrBlank() || isAnonymizedOrCode(clientName)) return
-        val clean = clientName.trim()
-        if (projectId > 0) projectIdToClientName[projectId] = clean
-        if (!projectCode.isNullOrBlank()) projectCodeToClientName[projectCode.trim()] = clean
-        if (!agentCode.isNullOrBlank()) agentCodeToClientName[agentCode.trim().uppercase()] = clean
-        metaPrefs()?.edit()?.apply {
-            if (projectId > 0) putString("cid_$projectId", clean)
-            if (!projectCode.isNullOrBlank()) putString("ccode_${projectCode.trim()}", clean)
-            if (!agentCode.isNullOrBlank()) putString("cagent_${agentCode.trim().uppercase()}", clean)
-            apply()
-        }
-    }
+    // Tidak menyimpan identitas klien lintas akun; data hanya berasal dari endpoint berizin.
+    fun rememberProjectClient(projectId: Long, projectCode: String? = null,
+                              agentCode: String? = null, clientName: String?) = Unit
 
     fun resolveClientName(
-        rawClientName: String?,
-        projectId: Long = 0L,
-        projectCode: String? = null,
-        agentCode: String? = null
+        rawClientName: String?, projectId: Long = 0L,
+        projectCode: String? = null, agentCode: String? = null
     ): String {
-        if (!rawClientName.isNullOrBlank() && !isAnonymizedOrCode(rawClientName)) {
-            rememberProjectClient(projectId, projectCode, agentCode, rawClientName)
-            return rawClientName.trim()
-        }
-        val prefs = metaPrefs()
-        if (projectId > 0) {
-            projectIdToClientName[projectId]?.let { return it }
-            prefs?.getString("cid_$projectId", null)?.takeIf { it.isNotBlank() }?.let {
-                projectIdToClientName[projectId] = it
-                return it
-            }
-        }
-        if (!projectCode.isNullOrBlank()) {
-            val codeKey = projectCode.trim()
-            projectCodeToClientName[codeKey]?.let { return it }
-            prefs?.getString("ccode_$codeKey", null)?.takeIf { it.isNotBlank() }?.let {
-                projectCodeToClientName[codeKey] = it
-                return it
-            }
-        }
-        if (!agentCode.isNullOrBlank()) {
-            val agKey = agentCode.trim().uppercase()
-            agentCodeToClientName[agKey]?.let { return it }
-            prefs?.getString("cagent_$agKey", null)?.takeIf { it.isNotBlank() }?.let {
-                agentCodeToClientName[agKey] = it
-                return it
-            }
-        }
-        val fallbackClients = listOf(
-            "PT Demo Sejahtera",
-            "PT Surya Makmur",
-            "PT Hakumanatata",
-            "PT Arunika Data"
-        )
-        val idx = kotlin.math.abs((if (projectId > 0) projectId.toInt() else (agentCode?.hashCode() ?: 0))) % fallbackClients.size
-        return fallbackClients[idx]
+        // Jangan menggunakan cache dari akun yang login sebelumnya untuk memulihkan data privat.
+        if (!rawClientName.isNullOrBlank()) return rawClientName
+        return "Proyek ${projectCode ?: agentCode ?: projectId}"
     }
 
-    private fun candidateTokens(primaryToken: String): List<String> {
-        val prefs = metaPrefs()
-        val set = linkedSetOf(primaryToken)
-        roleTokens.values.forEach { set.add(it) }
-        agentCodeTokens.values.forEach { set.add(it) }
-        prefs?.all?.forEach { (k, v) ->
-            if ((k.startsWith("tok_role_") || k.startsWith("tok_code_")) && v is String && v.isNotBlank()) {
-                set.add(v)
-            }
-        }
-        return set.toList()
-    }
+    private fun candidateTokens(primaryToken: String): List<String> = listOf(primaryToken)
 
     private fun errorMessage(error: Exception): ApiError {
         if (error is HttpException) {
@@ -141,23 +84,58 @@ object ApiService {
         return ApiError(error.message ?: "Koneksi gagal")
     }
 
+    private val sentFcmTokens = java.util.concurrent.ConcurrentHashMap<String, String>()
+
     fun registerFcmDeviceToken(token: String) {
         val ctx = App.appContext ?: return
         PushNotificationHelper.obtainDeviceFcmToken(ctx) { fcmToken ->
-            scope.launch {
-                runCatching {
-                    App.retrofitService.registerDeviceToken(
-                        "Bearer $token",
-                        RegisterDeviceTokenRequest(fcmToken = fcmToken)
-                    )
-                }
+            sendFcmTokenToBackend(token, fcmToken)
+        }
+    }
+
+    private fun sendFcmTokenToBackend(jwt: String, fcmToken: String) {
+        if (fcmToken.isBlank() || sentFcmTokens[jwt] == fcmToken) return
+        scope.launch {
+            runCatching {
+                App.retrofitService.registerDeviceToken(
+                    "Bearer $jwt", RegisterDeviceTokenRequest(fcmToken = fcmToken)
+                )
+            }.onSuccess {
+                sentFcmTokens[jwt] = fcmToken
+                Log.d("IntegraFCM", "Token perangkat terdaftar pada backend")
+            }.onFailure { error ->
+                Log.e("IntegraFCM", "Gagal mendaftarkan token: ${error.message}")
             }
+        }
+    }
+
+    /** Dipanggil saat FCM melakukan token rotation. */
+    fun registerRefreshedFcmToken(fcmToken: String) {
+        val ctx = App.appContext ?: return
+        val session = SessionStore(ctx).restore() ?: return
+        sendFcmTokenToBackend(session.token, fcmToken)
+    }
+
+    /** Best-effort: kosongkan mapping FCM di backend saat logout. */
+    fun unregisterFcmDeviceToken(jwt: String) {
+        sentFcmTokens.remove(jwt)
+        val ctx = App.appContext ?: return
+        scope.launch {
+            runCatching {
+                App.retrofitService.registerDeviceToken(
+                    "Bearer $jwt", RegisterDeviceTokenRequest(fcmToken = "")
+                )
+            }.onFailure { error ->
+                Log.w("IntegraFCM", "Gagal unregister perangkat: ${error.message}")
+            }
+            PushNotificationHelper.deleteLocalFcmToken(ctx)
         }
     }
 
     fun syncFcmAndPollNotifications(token: String, userKey: String) {
         val ctx = App.appContext ?: return
-        registerFcmDeviceToken(token)
+        // Registrasi token hanya bila belum berhasil untuk session ini.
+        if (!sentFcmTokens.containsKey(token)) registerFcmDeviceToken(token)
         scope.launch {
             runCatching {
                 val notifs = App.retrofitService.getNotifications("Bearer $token")
@@ -261,16 +239,7 @@ object ApiService {
 
     fun resolveActiveToken(explicitToken: String? = null, roleHint: String? = null): String? {
         if (!explicitToken.isNullOrBlank()) return explicitToken
-        val ctx = App.appContext
-        val sessionTok = ctx?.getSharedPreferences("integra_session", Context.MODE_PRIVATE)
-            ?.getString("token", null)
-        if (!sessionTok.isNullOrBlank()) return sessionTok
-        val r = roleHint?.trim()?.lowercase()
-        if (!r.isNullOrEmpty()) {
-            roleTokens[r]?.let { if (it.isNotBlank()) return it }
-            metaPrefs()?.getString("tok_role_$r", null)?.let { if (it.isNotBlank()) return it }
-        }
-        return roleTokens.values.firstOrNull { it.isNotBlank() }
+        return App.appContext?.let { SessionStore(it).restore()?.token }
     }
 
     fun fetchNotifications(
@@ -425,92 +394,41 @@ object ApiService {
     }
 
     fun updateProjectStatus(
-        token: String,
-        projectId: Long,
-        status: String,
-        reason: String?,
+        token: String, projectId: Long, status: String, reason: String?,
         done: (Result<ProjectDto>) -> Unit
     ) {
         scope.launch {
             val result = try {
-                var updated: ProjectDto? = null
-                for (tok in candidateTokens(token)) {
-                    val attempt = runCatching {
-                        App.retrofitService.updateProjectStatus(
-                            "Bearer $tok",
-                            projectId,
-                            UpdateStatusRequest(status = status, reason = reason)
-                        )
-                    }.getOrNull()
-                    if (attempt != null) {
-                        updated = attempt
-                        break
-                    }
-                }
-                localStatusOverrides[projectId] = status
-                Result.success(updated ?: ProjectDto(id = projectId, status = status))
+                Result.success(App.retrofitService.updateProjectStatus(
+                    "Bearer $token", projectId, UpdateStatusRequest(status = status, reason = reason)
+                ))
             } catch (error: Exception) {
-                localStatusOverrides[projectId] = status
-                Result.success(ProjectDto(id = projectId, status = status))
+                Result.failure(errorMessage(error))
             }
             withContext(Dispatchers.Main) { done(result) }
         }
     }
 
     fun counterOffer(
-        token: String,
-        projectId: Long,
-        newDealValue: Double,
-        notes: String,
+        token: String, projectId: Long, newDealValue: Double, notes: String,
         done: (Result<ProjectDto>) -> Unit
     ) {
         scope.launch {
             val result = try {
-                var updated: ProjectDto? = null
-                for (tok in candidateTokens(token)) {
-                    val attempt = runCatching {
-                        App.retrofitService.counterOffer(
-                            "Bearer $tok",
-                            projectId,
-                            CounterOfferRequest(newDealValue = newDealValue, notes = notes)
-                        )
-                    }.getOrNull()
-                    if (attempt != null) {
-                        updated = attempt
-                        break
-                    }
-                }
-                localValueOverrides[projectId] = newDealValue
-                Result.success(updated ?: ProjectDto(id = projectId, dealValue = newDealValue))
-            } catch (error: Exception) {
-                localValueOverrides[projectId] = newDealValue
-                Result.success(ProjectDto(id = projectId, dealValue = newDealValue))
-            }
+                Result.success(App.retrofitService.counterOffer(
+                    "Bearer $token", projectId,
+                    CounterOfferRequest(newDealValue = newDealValue, notes = notes)
+                ))
+            } catch (error: Exception) { Result.failure(errorMessage(error)) }
             withContext(Dispatchers.Main) { done(result) }
         }
     }
 
-    fun requestDealApproval(
-        token: String,
-        projectId: Long,
-        done: (Result<ApprovalDto>) -> Unit
-    ) {
+    fun requestDealApproval(token: String, projectId: Long, done: (Result<ApprovalDto>) -> Unit) {
         scope.launch {
             val result = try {
-                var approval: ApprovalDto? = null
-                for (tok in candidateTokens(token)) {
-                    val attempt = runCatching {
-                        App.retrofitService.requestDealApproval("Bearer $tok", projectId)
-                    }.getOrNull()
-                    if (attempt != null) {
-                        approval = attempt
-                        break
-                    }
-                }
-                Result.success(approval ?: ApprovalDto(id = projectId, projectId = projectId, status = "pending"))
-            } catch (error: Exception) {
-                Result.success(ApprovalDto(id = projectId, projectId = projectId, status = "pending"))
-            }
+                Result.success(App.retrofitService.requestDealApproval("Bearer $token", projectId))
+            } catch (error: Exception) { Result.failure(errorMessage(error)) }
             withContext(Dispatchers.Main) { done(result) }
         }
     }
@@ -745,7 +663,7 @@ object ApiService {
                 val allProjects = runCatching { App.retrofitService.getProjects(bearer) }.getOrDefault(emptyList())
                 val sameClientCount = allProjects.count {
                     (p.clientId != null && it.clientId == p.clientId) ||
-                        it.clientName.equals(p.clientName, ignoreCase = true)
+                            it.clientName.equals(p.clientName, ignoreCase = true)
                 }
 
                 Result.success(
@@ -798,16 +716,7 @@ object ApiService {
                 val notifs = runCatching { App.retrofitService.getNotifications(bearer) }.getOrDefault(emptyList())
                 App.appContext?.let { PushNotificationHelper.dispatchUnreadNotifications(it, "upline_${token.takeLast(8)}", notifs) }
 
-                // If we have any cached Downline or Admin token on this device, also warm up client names from it
-                for (tok in candidateTokens(token)) {
-                    if (tok != token) {
-                        runCatching {
-                            App.retrofitService.getProjects("Bearer $tok").forEach { dp ->
-                                rememberProjectClient(dp.id, dp.projectCode, dp.agentCode, dp.clientName)
-                            }
-                        }
-                    }
-                }
+                // Data downline hanya dari endpoint role-aware, tidak memakai token pengguna lain.
 
                 // Remember any non-anonymized projects from Upline's own list
                 allProjects.forEach { p ->
@@ -1305,6 +1214,38 @@ object ApiService {
         }
     }
 
+    // Catat sisa invoice saja: menghindari duplikasi pembayaran pada invoice partial.
+    fun adminMarkInvoiceFullyPaid(token: String, invoiceId: Long, done: (Result<Boolean>) -> Unit) {
+        scope.launch {
+            val result = try {
+                val detail = App.retrofitService.getInvoiceDetail("Bearer $token", invoiceId)
+                val remaining = kotlin.math.round((detail.invoice.totalAmount - detail.paidAmount) * 100) / 100
+                if (remaining <= 0.0) throw IllegalStateException("Invoice sudah lunas")
+                App.retrofitService.createPayment("Bearer $token",
+                    CreatePaymentRequest(invoiceId = invoiceId, amountPaid = remaining))
+                Result.success(true)
+            } catch (error: Exception) { Result.failure(errorMessage(error)) }
+            withContext(Dispatchers.Main) { done(result) }
+        }
+    }
+
+    // Mencatat sisa komisi saja, setelah Admin benar-benar melakukan transfer.
+    fun adminPayRemainingCommission(token: String, commissionId: Long, done: (Result<Boolean>) -> Unit) {
+        scope.launch {
+            val result = try {
+                val detail = App.retrofitService.getCommissionDetail("Bearer $token", commissionId)
+                if (detail.commission.payoutStatus != "approved")
+                    throw IllegalStateException("Komisi belum approved atau sudah paid")
+                val remaining = kotlin.math.round((detail.commission.totalCommissionAmount - detail.paidAmount) * 100) / 100
+                if (remaining <= 0.0) throw IllegalStateException("Komisi sudah lunas")
+                App.retrofitService.createCommissionPayout("Bearer $token",
+                    CreatePayoutRequest(commissionId = commissionId, amountPaid = remaining))
+                Result.success(true)
+            } catch (error: Exception) { Result.failure(errorMessage(error)) }
+            withContext(Dispatchers.Main) { done(result) }
+        }
+    }
+
     fun adminApproveCommission(
         token: String,
         commissionId: Long,
@@ -1429,13 +1370,14 @@ object ApiService {
         token: String,
         title: String,
         message: String,
+        roles: List<String>? = null,
         done: (Result<BroadcastResponse>) -> Unit
     ) {
         scope.launch {
             val result = try {
                 val res = App.retrofitService.sendBroadcast(
                     "Bearer $token",
-                    BroadcastRequest(title = title.trim(), message = message.trim())
+                    BroadcastRequest(title = title.trim(), message = message.trim(), roles = roles)
                 )
                 App.appContext?.let { ctx ->
                     PushNotificationHelper.showSystemNotification(
@@ -1456,12 +1398,14 @@ object ApiService {
     fun adminExportReport(
         token: String,
         reportType: String,
+        from: String? = null,
+        to: String? = null,
         done: (Result<ReportResponseDto>) -> Unit
     ) {
         scope.launch {
             val result = try {
                 Result.success(
-                    App.retrofitService.getReportData("Bearer $token", reportType, "json")
+                    App.retrofitService.getReportData("Bearer $token", reportType, "json", from, to)
                 )
             } catch (error: Exception) {
                 Result.failure(errorMessage(error))
@@ -1475,6 +1419,8 @@ object ApiService {
         token: String,
         reportType: String,
         format: String,
+        from: String? = null,
+        to: String? = null,
         done: (Result<String>) -> Unit
     ) {
         scope.launch {
@@ -1490,7 +1436,7 @@ object ApiService {
                 } else {
                     "application/pdf"
                 }
-                val body = App.retrofitService.downloadReportFile("Bearer $token", reportType, fmt)
+                val body = App.retrofitService.downloadReportFile("Bearer $token", reportType, fmt, from, to)
                 val bytes = body.bytes()
                 val fileName = "Integra_${reportType}_${System.currentTimeMillis().toString().takeLast(5)}.$ext"
                 val savedPath = saveBytesToDownloads(context, fileName, mime, bytes)

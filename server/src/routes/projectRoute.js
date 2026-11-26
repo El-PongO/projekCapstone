@@ -1,5 +1,6 @@
 const r=require('express').Router();const db=require('../config/database');
-const {Project,ProjectItem,Item,User,Client,ProjectActivityLog,ProjectApproval}=require('../models');
+const {Project,ProjectItem,Item,User,Client,ProjectActivityLog,ProjectApproval,AgentHierarchy}=require('../models');
+const {notify,push}=require('../services/notify');
 const {auth}=require('../middleware/auth');const {findProject,projectScope,publicProject}=require('../services/access');
 const {log}=require('../services/activity');
 const {wrap,fail,id,nonempty,optional,amount,enumValue,page,Op}=require('../utils/common');
@@ -78,11 +79,31 @@ r.patch('/:id/status',wrap(async(req,res)=>{
  res.json(publicProject(p,req.user));
 }));
 r.patch('/:id/stage',wrap(async(req,res)=>{
- const p=await findProject(req.user,req.params.id,true);const to=enumValue(req.body.stage,stages);
- if(['app_creation','implementation','completed'].includes(to)&&p.status!=='deal')throw fail(409,'Stage hanya untuk proyek Deal');
- const before=p.execution_stage;
- await db.transaction(async transaction=>{await p.update({execution_stage:to},{transaction});await log(p.id,req.user.id,`Stage ${before} -> ${to}`,before,to,transaction);});
- res.json(publicProject(p,req.user));
+ const p=await findProject(req.user,req.params.id,true);
+ const to=enumValue(req.body.stage,stages);
+ if(['app_creation','implementation','completed'].includes(to)&&p.status!=='deal')throw fail(409,'Tahap pelaksanaan hanya untuk proyek Deal');
+ if(to==='completed'&&(req.user.role==='admin'||Number(p.agent_id)!==Number(req.user.id)))
+  throw fail(403,'Hanya agen pemilik proyek yang boleh menyatakan proyek selesai');
+ const admins=to==='completed'?await User.findAll({where:{role:'admin',is_active:true},attributes:['id']}):[];
+ const result=await db.transaction(async transaction=>{
+  const locked=await Project.findByPk(p.id,{transaction,lock:transaction.LOCK.UPDATE});
+  if(locked.execution_stage==='completed')throw fail(409,'Proyek telah selesai; stage tidak boleh diubah lagi');
+  if(locked.status!=='deal'&&['app_creation','implementation','completed'].includes(to))throw fail(409,'Proyek belum Deal');
+  const from=locked.execution_stage;
+  if(from===to)throw fail(409,'Stage proyek tidak berubah');
+  await locked.update({execution_stage:to},{transaction});
+  await log(locked.id,req.user.id,`Stage ${from} -> ${to}`,from,to,transaction);
+  const recipients=[];
+  if(to==='completed'){
+   const relation=await AgentHierarchy.findOne({where:{downline_id:locked.agent_id,depth:1},transaction});
+   for(const u of admins)recipients.push(Number(u.id));
+   if(relation)recipients.push(Number(relation.upline_id));
+   for(const uid of [...new Set(recipients)])await notify(uid,'Proyek Selesai',`${locked.project_code} ditandai selesai oleh ${req.user.agent_code}. Tinjau pembayaran dan komisi`,'project_status',transaction);
+  }
+  return {project:locked,recipients:[...new Set(recipients)]};
+ });
+ if(to==='completed')await Promise.allSettled(result.recipients.map(uid=>push(uid,'Proyek Selesai',`${p.project_code}: tinjau pencairan komisi`)));
+ res.json(publicProject(result.project,req.user));
 }));
 r.delete('/:id',wrap(async(req,res)=>{
  const p=await findProject(req.user,req.params.id,true);if(p.status==='deal')throw fail(409,'Proyek Deal tidak dapat dibatalkan');

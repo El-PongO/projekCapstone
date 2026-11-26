@@ -606,7 +606,10 @@ fun GlobalDealsDetailsRoute(
 
     val context = LocalContext.current
     var generatingPdf by remember { mutableStateOf(false) }
+    var showWorkspace by remember { mutableStateOf(false) }
+    var showDealWorkflow by remember { mutableStateOf(false) }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     GlobalDealsDetailsScreenContent(
         roleTitle = roleLabel,
         userName = session.user.name,
@@ -655,6 +658,39 @@ fun GlobalDealsDetailsRoute(
         onCenterClick = onCenterAction,
         onProfile = onProfile
     )
+    if (selection.projectId > 0L && session.user.role != "admin") {
+        ExtendedFloatingActionButton(
+            onClick = { showDealWorkflow = true },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 14.dp, bottom = 160.dp),
+            containerColor = Color(0xFF0E9F6E), contentColor = Color.White,
+            text = { Text("Deal & Komisi") },
+            icon = { Icon(Icons.Default.Add, contentDescription = null) }
+        )
+    }
+    if (selection.projectId > 0L) {
+        ExtendedFloatingActionButton(
+            onClick = { showWorkspace = true },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 14.dp, bottom = 88.dp),
+            containerColor = GlobalPrimaryBlue,
+            contentColor = Color.White,
+            text = { Text("Workspace") },
+            icon = { Icon(Icons.Default.Add, contentDescription = null) }
+        )
+    }
+    }
+    if (showDealWorkflow && selection.projectId > 0L) {
+        IntegraAgentDealWorkflowDialog(
+            token = session.token,
+            currentUserId = session.user.id.toLong(),
+            projectId = selection.projectId,
+            onDismiss = { showDealWorkflow = false }
+        )
+    }
+    if (showWorkspace && selection.projectId > 0L) {
+        IntegraProjectWorkspaceDialog(projectId = selection.projectId, token = session.token,
+            onDismiss = { showWorkspace = false })
+    }
+
 }
 
 @Composable
@@ -679,191 +715,27 @@ fun GlobalDealsDetailsScreenContent(
     onCenterClick: () -> Unit = {},
     onProfile: () -> Unit = {}
 ) {
-    val context = LocalContext.current
-
-    Scaffold(
-        containerColor = GlobalBgGray,
-        bottomBar = {
-            RoleBottomBar(
-                centerLabel = centerBarLabel,
-                onHome = onHome,
-                onCenterClick = onCenterClick,
-                onProfile = onProfile
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(GlobalBgGray)
-        ) {
-            RoleTopBar(
-                roleTitle = roleTitle,
-                userName = userName,
-                onNotificationClick = onNotificationBellClick
-            )
-
-            // Sub-header: Blue Back Button + "Deals Details"
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp)
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(GlobalPrimaryBlue)
-                        .clickable { onBack() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                Text(
-                    text = "Deals Details",
-                    color = Color.Black,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Normal
-                )
-            }
-
-            // Main White Rounded Card Container
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp)
-                    .clip(RoundedCornerShape(28.dp))
-                    .border(1.dp, Color.Black, RoundedCornerShape(28.dp))
-                    .background(Color.White)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 18.dp, vertical = 22.dp)
-            ) {
-                // Client Details Header
-                Text(
-                    text = "Client Details",
-                    color = Color.Black,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                HorizontalDivider(color = Color.DarkGray, thickness = 1.dp)
-                Spacer(modifier = Modifier.height(14.dp))
-
-                DetailKeyValueRow(label = "Client Name:", value = clientName)
-                Spacer(modifier = Modifier.height(8.dp))
-                DetailKeyValueRow(label = "Returning Client :", value = returningClient)
-                Spacer(modifier = Modifier.height(8.dp))
-                DetailKeyValueRow(label = "Client Number:", value = clientNumber)
-
-                Spacer(modifier = Modifier.height(26.dp))
-
-                // Project Details Header
-                Text(
-                    text = "Project Details",
-                    color = Color.Black,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                HorizontalDivider(color = Color.DarkGray, thickness = 1.dp)
-                Spacer(modifier = Modifier.height(14.dp))
-
-                if (loading) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = GlobalPrimaryBlue, modifier = Modifier.size(24.dp))
-                    }
-                } else {
-                    // Agent responsible with Phone Icon
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Agent responsible:",
-                            color = Color.Black,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.width(120.dp)
-                        )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable {
-                                runCatching {
-                                    context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$clientNumber")))
-                                }.onFailure {
-                                    Toast.makeText(context, "Agent: $agentResponsible", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        ) {
-                            Text(
-                                text = agentResponsible,
-                                color = Color.Black,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(
-                                imageVector = Icons.Default.Phone,
-                                contentDescription = "Call Agent",
-                                tint = Color.Black,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    DetailKeyValueRow(label = "Product Type:", value = productType)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    DetailKeyValueRow(label = "Deal Type:", value = dealType)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    DetailKeyValueRow(label = "Initial Price:", value = initialPriceFormatted)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    DetailKeyValueRow(
-                        label = "Deal Details:",
-                        value = dealDetails,
-                        alignTop = true
-                    )
-
-                    Spacer(modifier = Modifier.height(22.dp))
-
-                    Button(
-                        onClick = onGenerateProposalPdf,
-                        enabled = !generatingPdf,
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = GlobalPrimaryBlue),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(38.dp)
-                    ) {
-                        Text(
-                            text = if (generatingPdf) "Generating PDF..." else "Generate Proposal PDF",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        }
-    }
+    IntegraModernDealsDetailsScreen(
+        roleTitle = roleTitle,
+        userName = userName,
+        clientName = clientName,
+        returningClient = returningClient,
+        clientNumber = clientNumber,
+        agentResponsible = agentResponsible,
+        productType = productType,
+        dealType = dealType,
+        initialPriceFormatted = initialPriceFormatted,
+        dealDetails = dealDetails,
+        centerBarLabel = centerBarLabel,
+        loading = loading,
+        generatingPdf = generatingPdf,
+        onGenerateProposalPdf = onGenerateProposalPdf,
+        onBack = onBack,
+        onNotificationBellClick = onNotificationBellClick,
+        onHome = onHome,
+        onCenterClick = onCenterClick,
+        onProfile = onProfile
+    )
 }
 
 @Composable

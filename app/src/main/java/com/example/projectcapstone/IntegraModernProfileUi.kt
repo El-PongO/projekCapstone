@@ -73,6 +73,7 @@ fun IntegraModernProfileScreen(
 ) {
     var showLogoutConfirmation by remember { mutableStateOf(false) }
     var showNotifications by remember { mutableStateOf(false) }
+    var showLeaderboard by remember { mutableStateOf(false) }
     var unreadCount by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(notificationToken, roleTitle, showNotifications) {
@@ -82,6 +83,10 @@ fun IntegraModernProfileScreen(
                 result.onSuccess { unreadCount = it.count { notification -> !notification.isRead } }
             }
         }
+    }
+
+    if (showLeaderboard) {
+        IntegraLeaderboardDialog(token = notificationToken.orEmpty(), onDismiss = { showLeaderboard = false })
     }
 
     if (showNotifications) {
@@ -117,11 +122,16 @@ fun IntegraModernProfileScreen(
     Scaffold(
         containerColor = ProfBackground,
         bottomBar = {
-            ProfileModernBottomBar(
-                centerBarLabel = centerBarLabel,
-                onHome = onHome,
-                onAddProject = onCenterClick
-            )
+            val adminNavigation = LocalIntegraAdminNav.current
+            if (roleTitle.equals("Admin", ignoreCase = true) && adminNavigation != null) {
+                AdminBottomBar(currentPage = AdminPage.PROFILE, onNavigate = adminNavigation)
+            } else {
+                ProfileModernBottomBar(
+                    centerBarLabel = centerBarLabel,
+                    onHome = onHome,
+                    onAddProject = onCenterClick
+                )
+            }
         }
     ) { paddingValues ->
         Column(
@@ -174,6 +184,14 @@ fun IntegraModernProfileScreen(
                     role = roleTitle,
                     isActive = accountActive
                 )
+
+                OutlinedButton(
+                    onClick = { showLeaderboard = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text("Lihat Peringkat Agen", color = ProfBlue, fontWeight = FontWeight.SemiBold)
+                }
 
                 if (loading) {
                     LinearProgressIndicator(

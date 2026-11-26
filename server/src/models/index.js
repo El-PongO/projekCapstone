@@ -8,6 +8,7 @@ module.exports = {
   ProjectActivityLog: require("./ProjectActivityLog"),
   Payment: require("./Payment"),
   Commission: require("./Commission"),
+  DealRateOffer: require("./DealRateOffer"),
   Proposal: require("./Proposal"),
   Notification: require("./Notification"),
   ProjectApproval: require("./ProjectApproval"),

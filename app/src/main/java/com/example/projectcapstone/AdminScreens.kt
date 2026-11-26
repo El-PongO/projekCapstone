@@ -37,6 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -58,12 +59,12 @@ import java.util.Locale
 // ==========================================
 // UNIFIED COLOR PALETTE (MATCHING DOWNLINE & UPLINE UI)
 // ==========================================
-private val AdminBgGray = Color(0xFFE5E5E5)
-private val AdminPrimaryBlue = Color(0xFF0048FF)
-private val AdminDarkBlue = Color(0xFF0014A8)
-private val AdminGreen = Color(0xFF1B8A2A)
-private val AdminRed = Color(0xFFD92121)
-private val AdminOlive = Color(0xFFA0A818)
+private val AdminBgGray = Color(0xFFF3F6FB)
+private val AdminPrimaryBlue = Color(0xFF1458ED)
+private val AdminDarkBlue = Color(0xFF1946B8)
+private val AdminGreen = Color(0xFF19A668)
+private val AdminRed = Color(0xFFE95465)
+private val AdminOlive = Color(0xFFF2B537)
 private val AdminFieldGray = Color(0xFFD9D9D9)
 
 private fun adminMoney(value: Double, useDot: Boolean = false): String {
@@ -273,7 +274,8 @@ fun AdminAppScreen(
         }
 
         AdminPage.DEAL_DETAILS -> {
-            GlobalDealsDetailsRoute(
+            CompositionLocalProvider(LocalIntegraAdminNav provides { target: AdminPage -> navigateTo(target) }) {
+                GlobalDealsDetailsRoute(
                 session = session,
                 selection = selectedDeal,
                 centerBarLabel = "Broadcast",
@@ -282,11 +284,13 @@ fun AdminAppScreen(
                 onCenterAction = { navigateTo(AdminPage.BROADCAST) },
                 onProfile = { navigateTo(AdminPage.PROFILE) },
                 onExpired = onExpired
-            )
+                )
+            }
         }
 
         AdminPage.PROFILE -> {
-            GlobalProfileRoute(
+            CompositionLocalProvider(LocalIntegraAdminNav provides { target: AdminPage -> navigateTo(target) }) {
+                GlobalProfileRoute(
                 session = session,
                 centerBarLabel = "Broadcast",
                 onBack = { currentPage = AdminPage.HOME },
@@ -294,7 +298,8 @@ fun AdminAppScreen(
                 onCenterAction = { navigateTo(AdminPage.BROADCAST) },
                 onLogout = onLogout,
                 onExpired = onExpired
-            )
+                )
+            }
         }
     }
 }
@@ -309,44 +314,26 @@ private fun AdminSubHeader(
     onBack: () -> Unit,
     trailingContent: (@Composable () -> Unit)? = null
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp)
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.Center
+    Row(
+        modifier = Modifier.fillMaxWidth().height(68.dp).padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .size(34.dp)
-                .clip(CircleShape)
-                .background(AdminPrimaryBlue)
-                .clickable { onBack() },
-            contentAlignment = Alignment.Center
+        Surface(
+            modifier = Modifier.size(42.dp).clickable { onBack() },
+            shape = RoundedCornerShape(14.dp),
+            color = AdminPrimaryBlue,
+            shadowElevation = 2.dp
         ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.White,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-
-        if (title.isNotEmpty()) {
-            Text(
-                text = title,
-                color = Color.Black,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Normal
-            )
-        }
-
-        if (trailingContent != null) {
-            Box(modifier = Modifier.align(Alignment.CenterEnd)) {
-                trailingContent()
+            Box(contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White, modifier = Modifier.size(20.dp))
             }
         }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF18233D))
+            Text("Integra Agency • Admin Workspace", fontSize = 11.sp, color = Color(0xFF71809B))
+        }
+        trailingContent?.invoke()
     }
 }
 
@@ -355,82 +342,57 @@ fun AdminBottomBar(
     currentPage: AdminPage = AdminPage.HOME,
     onNavigate: (AdminPage) -> Unit = {}
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(68.dp)
-            .background(Color.Transparent)
+    val navColors = NavigationBarItemDefaults.colors(
+        selectedIconColor = AdminPrimaryBlue,
+        selectedTextColor = AdminPrimaryBlue,
+        unselectedIconColor = Color(0xFF75849B),
+        unselectedTextColor = Color(0xFF75849B),
+        indicatorColor = Color(0xFFE9F0FF)
+    )
+    NavigationBar(
+        modifier = Modifier.fillMaxWidth().height(76.dp),
+        containerColor = Color.White,
+        tonalElevation = 5.dp
     ) {
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(52.dp)
-                .background(Color.White)
-                .border(width = 1.dp, color = Color.Black)
-                .padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            AdminNavIconItem(
-                label = "Home",
-                icon = Icons.Outlined.Home,
-                selected = currentPage == AdminPage.HOME,
-                onClick = { onNavigate(AdminPage.HOME) }
-            )
-            AdminNavIconItem(
-                label = "Agents",
-                icon = Icons.Outlined.Groups,
-                selected = currentPage == AdminPage.AGENTS_HUB ||
-                    currentPage == AdminPage.UPLINE_LIST ||
-                    currentPage == AdminPage.DOWNLINE_LIST ||
-                    currentPage == AdminPage.USER_DETAILS,
-                onClick = { onNavigate(AdminPage.AGENTS_HUB) }
-            )
-            Spacer(modifier = Modifier.width(54.dp))
-            AdminNavIconItem(
-                label = "Projects",
-                icon = Icons.Outlined.Folder,
-                selected = currentPage == AdminPage.MASTER_PROJECT,
-                onClick = { onNavigate(AdminPage.MASTER_PROJECT) }
-            )
-            AdminNavIconItem(
-                label = "profile",
-                icon = Icons.Outlined.Person,
-                selected = currentPage == AdminPage.PROFILE,
-                onClick = { onNavigate(AdminPage.PROFILE) }
-            )
-        }
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .clickable { onNavigate(AdminPage.BROADCAST) },
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(AdminPrimaryBlue)
-                    .border(1.dp, Color.White, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Campaign,
-                    contentDescription = "Broadcast",
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(1.dp))
-            Text(
-                text = "Broadcast",
-                color = Color.Black,
-                fontSize = 8.5.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
+        NavigationBarItem(
+            selected = currentPage == AdminPage.HOME,
+            onClick = { onNavigate(AdminPage.HOME) },
+            icon = { Icon(Icons.Outlined.Home, contentDescription = "Home") },
+            label = { Text("Home", fontSize = 10.sp) },
+            colors = navColors
+        )
+        NavigationBarItem(
+            selected = currentPage in listOf(AdminPage.AGENTS_HUB, AdminPage.UPLINE_LIST, AdminPage.DOWNLINE_LIST, AdminPage.USER_DETAILS),
+            onClick = { onNavigate(AdminPage.AGENTS_HUB) },
+            icon = { Icon(Icons.Outlined.Groups, contentDescription = "Agents") },
+            label = { Text("Agents", fontSize = 10.sp) },
+            colors = navColors
+        )
+        NavigationBarItem(
+            selected = currentPage == AdminPage.BROADCAST,
+            onClick = { onNavigate(AdminPage.BROADCAST) },
+            icon = {
+                Box(modifier = Modifier.size(38.dp).clip(CircleShape).background(AdminPrimaryBlue), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Campaign, contentDescription = "Broadcast", tint = Color.White, modifier = Modifier.size(20.dp))
+                }
+            },
+            label = { Text("Broadcast", fontSize = 10.sp) },
+            colors = navColors
+        )
+        NavigationBarItem(
+            selected = currentPage == AdminPage.MASTER_PROJECT,
+            onClick = { onNavigate(AdminPage.MASTER_PROJECT) },
+            icon = { Icon(Icons.Outlined.Folder, contentDescription = "Projects") },
+            label = { Text("Projects", fontSize = 10.sp) },
+            colors = navColors
+        )
+        NavigationBarItem(
+            selected = currentPage == AdminPage.PROFILE,
+            onClick = { onNavigate(AdminPage.PROFILE) },
+            icon = { Icon(Icons.Outlined.Person, contentDescription = "Profile") },
+            label = { Text("Profile", fontSize = 10.sp) },
+            colors = navColors
+        )
     }
 }
 
@@ -511,384 +473,14 @@ fun AdminHomeScreenContent(
     onNavigate: (AdminPage) -> Unit = {},
     onOpenDealDetails: (DealDetailSelection) -> Unit = {}
 ) {
-    var selectedNotif by remember { mutableStateOf<NotificationDto?>(null) }
-
-    val totalActiveAgents = (overview.agents.uplines + overview.agents.downlines).let {
-        if (it > 0) it else 11
-    }
-    val activeProjectsCount = if (overview.projects.total > 0) overview.projects.total else 24
-    val incomeMade = if (overview.projects.dealValue > 0) overview.projects.dealValue else 213000.0
-    val externalCommissions = if (overview.commissions.total > 0) overview.commissions.total else 56000.0
-
-    Scaffold(
-        containerColor = AdminBgGray,
-        bottomBar = { AdminBottomBar(currentPage = AdminPage.HOME, onNavigate = onNavigate) }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(AdminBgGray)
-        ) {
-            RoleTopBar(
-                roleTitle = "Admin",
-                userName = userName,
-                onNotificationClick = { onNavigate(AdminPage.BROADCAST) }
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 14.dp, vertical = 12.dp)
-            ) {
-                // 1. 2x2 Metric Summary Cards Container (Matching Downline/Upline card style)
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(22.dp))
-                        .border(1.dp, Color.Black, RoundedCornerShape(22.dp))
-                        .background(Color.White)
-                        .padding(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        LeftAccentCard(
-                            accentColor = AdminGreen,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(68.dp),
-                            cornerRadius = 14.dp,
-                            leftBorderWidth = 4.dp,
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxSize(),
-                                verticalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "Project Active",
-                                    color = Color.Black,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = activeProjectsCount.toString(),
-                                    color = Color.Black,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    modifier = Modifier.align(Alignment.End)
-                                )
-                            }
-                        }
-
-                        LeftAccentCard(
-                            accentColor = AdminDarkBlue,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(68.dp),
-                            cornerRadius = 14.dp,
-                            leftBorderWidth = 4.dp,
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxSize(),
-                                verticalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "Income Made",
-                                    color = Color.Black,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = adminMoney(incomeMade),
-                                    color = Color.Black,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    modifier = Modifier.align(Alignment.End)
-                                )
-                            }
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        LeftAccentCard(
-                            accentColor = AdminPrimaryBlue,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(68.dp),
-                            cornerRadius = 14.dp,
-                            leftBorderWidth = 4.dp,
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxSize(),
-                                verticalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "External Commission",
-                                    color = Color.Black,
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = adminMoney(externalCommissions),
-                                    color = Color.Black,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    modifier = Modifier.align(Alignment.End)
-                                )
-                            }
-                        }
-
-                        LeftAccentCard(
-                            accentColor = AdminGreen,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(68.dp),
-                            cornerRadius = 14.dp,
-                            leftBorderWidth = 4.dp,
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxSize(),
-                                verticalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "Total Active Agents",
-                                    color = Color.Black,
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = totalActiveAgents.toString(),
-                                    color = Color.Black,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    modifier = Modifier.align(Alignment.End)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // 2. My Admin Menu Card (7 Circular Blue Icon Buttons in 4 + 3 Grid)
-                LeftAccentCard(
-                    accentColor = AdminDarkBlue,
-                    modifier = Modifier.fillMaxWidth(),
-                    cornerRadius = 22.dp,
-                    leftBorderWidth = 4.dp,
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 14.dp)
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "my Admin menu",
-                            color = Color.Black,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            AdminMenuCircleItem(
-                                label = "upline",
-                                icon = Icons.Default.Person,
-                                onClick = { onNavigate(AdminPage.UPLINE_LIST) }
-                            )
-                            AdminMenuCircleItem(
-                                label = "Downline",
-                                icon = Icons.Default.Groups,
-                                onClick = { onNavigate(AdminPage.DOWNLINE_LIST) }
-                            )
-                            AdminMenuCircleItem(
-                                label = "Payments",
-                                icon = Icons.Default.AttachMoney,
-                                onClick = { onNavigate(AdminPage.MASTER_PAYMENTS) }
-                            )
-                            AdminMenuCircleItem(
-                                label = "Project\nReports",
-                                icon = Icons.Default.Folder,
-                                onClick = { onNavigate(AdminPage.MASTER_PROJECT) }
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            AdminMenuCircleItem(
-                                label = "Master Item",
-                                icon = Icons.Default.Inventory,
-                                onClick = { onNavigate(AdminPage.MASTER_ITEM) }
-                            )
-                            AdminMenuCircleItem(
-                                label = "Deals Reports",
-                                icon = Icons.Default.CheckCircle,
-                                onClick = { onNavigate(AdminPage.DEALS_REPORTS) }
-                            )
-                            AdminMenuCircleItem(
-                                label = "Export\nall reports",
-                                icon = Icons.Default.Download,
-                                onClick = { onNavigate(AdminPage.EXPORT_REPORTS) }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // 3. Recent Reports and notifications
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(Color.White)
-                        .padding(12.dp)
-                ) {
-                    Text(
-                        text = "Recent Reports and notifications",
-                        color = Color.Black,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    val displayNotifs = if (notifications.isNotEmpty()) {
-                        notifications.take(5)
-                    } else {
-                        listOf(
-                            NotificationDto(
-                                id = 1,
-                                title = "PT Integra Cipta Data - New Deal Submitted",
-                                message = "A new deal proposal has been submitted and awaits Admin review.",
-                                type = "project_status",
-                                createdAt = "2025-11-08"
-                            ),
-                            NotificationDto(
-                                id = 2,
-                                title = "Payment Reminder & Commission Update",
-                                message = "Client invoice payment verified and external agent commission calculated.",
-                                type = "commission",
-                                createdAt = "2025-11-08"
-                            )
-                        )
-                    }
-
-                    displayNotifs.forEachIndexed { idx, notif ->
-                        LeftAccentCard(
-                            accentColor = AdminGreen,
-                            modifier = Modifier.fillMaxWidth(),
-                            cornerRadius = 12.dp,
-                            leftBorderWidth = 4.dp,
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)
-                        ) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = if (idx % 2 == 0) Icons.Outlined.Notifications else Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = Color.Black,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = notif.title,
-                                        color = Color.Black,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = notif.message,
-                                    color = Color.DarkGray,
-                                    fontSize = 10.sp,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.Bottom
-                                ) {
-                                    Text(
-                                        text = "Date : ${adminDate(notif.createdAt)}",
-                                        color = Color.Black,
-                                        fontSize = 8.5.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .border(1.dp, Color.Black, RoundedCornerShape(6.dp))
-                                            .background(Color.White)
-                                            .clickable {
-                                                val proj = recentProjects.getOrNull(idx)
-                                                if (proj != null) {
-                                                    onOpenDealDetails(
-                                                        DealDetailSelection(
-                                                            projectId = proj.id,
-                                                            clientName = proj.clientName,
-                                                            initialPrice = proj.dealValue,
-                                                            agentResponsible = proj.agentCode ?: "UPL-001",
-                                                            dealDetails = notif.message
-                                                        )
-                                                    )
-                                                } else {
-                                                    selectedNotif = notif
-                                                }
-                                            }
-                                            .padding(horizontal = 14.dp, vertical = 4.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "See Details",
-                                            color = Color.Black,
-                                            fontSize = 9.5.sp,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        if (idx < displayNotifs.lastIndex) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    selectedNotif?.let { n ->
-        AlertDialog(
-            onDismissRequest = { selectedNotif = null },
-            title = { Text(n.title, fontWeight = FontWeight.Bold, fontSize = 16.sp) },
-            text = { Text(n.message, fontSize = 13.sp) },
-            confirmButton = {
-                TextButton(onClick = { selectedNotif = null }) {
-                    Text("Close")
-                }
-            }
-        )
-    }
+    IntegraModernAdminHomeScreen(
+        userName = userName,
+        overview = overview,
+        notifications = notifications,
+        recentProjects = recentProjects,
+        onNavigate = onNavigate,
+        onOpenDealDetails = onOpenDealDetails
+    )
 }
 
 @Composable
@@ -941,160 +533,13 @@ fun AdminAgentsHubScreen(
     onDownlineClick: () -> Unit = {},
     onBottomNavigate: (AdminPage) -> Unit = {}
 ) {
-    Scaffold(
-        containerColor = AdminBgGray,
-        bottomBar = { AdminBottomBar(currentPage = AdminPage.AGENTS_HUB, onNavigate = onBottomNavigate) }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(AdminBgGray)
-        ) {
-            RoleTopBar(roleTitle = "Admin", userName = userName)
-
-            AdminSubHeader(title = "Agents Directory", onBack = onBack)
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp)
-            ) {
-                // Upline Card
-                LeftAccentCard(
-                    accentColor = AdminDarkBlue,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(175.dp)
-                        .clickable { onUplineClick() },
-                    cornerRadius = 22.dp,
-                    leftBorderWidth = 5.dp,
-                    contentPadding = PaddingValues(20.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(78.dp)
-                                .clip(CircleShape)
-                                .background(AdminPrimaryBlue.copy(alpha = 0.12f))
-                                .border(2.dp, AdminPrimaryBlue, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Upline",
-                                tint = AdminPrimaryBlue,
-                                modifier = Modifier.size(44.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(18.dp))
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "Upline",
-                                color = Color.Black,
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Master Upline Supervisors & Team Leaders",
-                                color = Color.DarkGray,
-                                fontSize = 11.sp
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(AdminPrimaryBlue)
-                                    .padding(horizontal = 14.dp, vertical = 5.dp)
-                            ) {
-                                Text(
-                                    text = "View Upline Directory",
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                }
-
-                HorizontalDivider(color = Color.Black.copy(alpha = 0.25f), thickness = 1.dp)
-
-                // Downline Card
-                LeftAccentCard(
-                    accentColor = AdminGreen,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(175.dp)
-                        .clickable { onDownlineClick() },
-                    cornerRadius = 22.dp,
-                    leftBorderWidth = 5.dp,
-                    contentPadding = PaddingValues(20.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(78.dp)
-                                .clip(CircleShape)
-                                .background(AdminGreen.copy(alpha = 0.12f))
-                                .border(2.dp, AdminGreen, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Groups,
-                                contentDescription = "Downline",
-                                tint = AdminGreen,
-                                modifier = Modifier.size(44.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(18.dp))
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "Downline",
-                                color = Color.Black,
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Master Downline Field Agents & Rates",
-                                color = Color.DarkGray,
-                                fontSize = 11.sp
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(AdminPrimaryBlue)
-                                    .padding(horizontal = 14.dp, vertical = 5.dp)
-                            ) {
-                                Text(
-                                    text = "View Downline Directory",
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    IntegraModernAdminAgentsHubScreen(
+        userName = userName,
+        onBack = onBack,
+        onUplineClick = onUplineClick,
+        onDownlineClick = onDownlineClick,
+        onBottomNavigate = onBottomNavigate
+    )
 }
 
 // ==========================================
@@ -1259,239 +704,22 @@ fun AdminAgentListScreenContent(
         if (searchQuery.isBlank()) agents
         else agents.filter {
             it.name.contains(searchQuery, ignoreCase = true) ||
-                it.agentCode.contains(searchQuery, ignoreCase = true) ||
-                it.email.contains(searchQuery, ignoreCase = true)
+                    it.agentCode.contains(searchQuery, ignoreCase = true) ||
+                    it.email.contains(searchQuery, ignoreCase = true)
         }
     }
 
-    Scaffold(
-        containerColor = AdminBgGray,
-        bottomBar = { AdminBottomBar(currentPage = AdminPage.AGENTS_HUB, onNavigate = onBottomNavigate) }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(AdminBgGray)
-        ) {
-            RoleTopBar(roleTitle = "Admin", userName = userName)
-
-            AdminSubHeader(
-                title = title,
-                onBack = onBack,
-                trailingContent = {
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(AdminPrimaryBlue)
-                            .clickable { onAddClick() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add Agent",
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            )
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
-                    .clip(RoundedCornerShape(26.dp))
-                    .border(1.dp, Color.Black, RoundedCornerShape(26.dp))
-                    .background(Color.White)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 14.dp, vertical = 14.dp)
-            ) {
-                // Search Bar
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(32.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(AdminFieldGray)
-                        .padding(horizontal = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    BasicTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        singleLine = true,
-                        textStyle = TextStyle(color = Color.Black, fontSize = 11.sp),
-                        modifier = Modifier.weight(1f),
-                        decorationBox = { innerTextField ->
-                            if (searchQuery.isEmpty()) {
-                                Text(
-                                    text = "search ${title.lowercase()}...",
-                                    color = Color.Gray,
-                                    fontSize = 11.sp
-                                )
-                            }
-                            innerTextField()
-                        }
-                    )
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = Color.Black,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "$title Directory (${filtered.size})",
-                    color = Color.Black,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                HorizontalDivider(color = Color.LightGray, thickness = 1.dp)
-                Spacer(modifier = Modifier.height(10.dp))
-
-                filtered.forEachIndexed { idx, agent ->
-                    val accent = if (title.equals("Downline", ignoreCase = true)) AdminGreen else AdminDarkBlue
-                    LeftAccentCard(
-                        accentColor = accent,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelectAgent(agent) },
-                        cornerRadius = 16.dp,
-                        leftBorderWidth = 4.dp,
-                        contentPadding = PaddingValues(12.dp)
-                    ) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .clip(CircleShape)
-                                        .background(AdminPrimaryBlue.copy(alpha = 0.12f))
-                                        .border(1.dp, AdminPrimaryBlue, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Person,
-                                        contentDescription = agent.name,
-                                        tint = AdminPrimaryBlue,
-                                        modifier = Modifier.size(26.dp)
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(10.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = agent.name,
-                                        color = Color.Black,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "Code: ${agent.agentCode} • ${agent.email}",
-                                        color = Color.DarkGray,
-                                        fontSize = 9.5.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = "Phone: ${agent.phoneNumber ?: "08123456789"}",
-                                        color = Color.DarkGray,
-                                        fontSize = 9.sp
-                                    )
-                                }
-
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(
-                                            if (agent.isActive) AdminGreen.copy(alpha = 0.15f)
-                                            else AdminRed.copy(alpha = 0.15f)
-                                        )
-                                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                                ) {
-                                    Text(
-                                        text = if (agent.isActive) "Active" else "Inactive",
-                                        color = if (agent.isActive) AdminGreen else AdminRed,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .border(1.dp, Color.Black, RoundedCornerShape(8.dp))
-                                        .background(Color(0xFFF2F2F2))
-                                        .padding(horizontal = 8.dp, vertical = 5.dp)
-                                ) {
-                                    Text(
-                                        text = "Type: ${(agent.agentType ?: "external").uppercase()}",
-                                        color = Color.Black,
-                                        fontSize = 9.5.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .border(1.dp, Color.Black, RoundedCornerShape(8.dp))
-                                        .background(Color(0xFFF2F2F2))
-                                        .padding(horizontal = 8.dp, vertical = 5.dp)
-                                ) {
-                                    Text(
-                                        text = "Rate Cut: ${agent.ratePercent}%",
-                                        color = Color.Black,
-                                        fontSize = 9.5.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(Color(0xFFD9D9D9))
-                                        .clickable { onSelectAgent(agent) }
-                                        .padding(horizontal = 14.dp, vertical = 5.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "View Details",
-                                        color = Color.Black,
-                                        fontSize = 9.5.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    if (idx < filtered.lastIndex) {
-                        Spacer(modifier = Modifier.height(10.dp))
-                    }
-                }
-            }
-        }
-    }
+    IntegraModernAdminAgentListScreen(
+        userName = userName,
+        title = title,
+        agents = filtered,
+        searchQuery = searchQuery,
+        onSearchChange = { searchQuery = it },
+        onBack = onBack,
+        onAddClick = onAddClick,
+        onSelectAgent = onSelectAgent,
+        onBottomNavigate = onBottomNavigate
+    )
 }
 
 // ==========================================
@@ -1511,239 +739,13 @@ fun AdminMasterUserDetailsScreen(
     var rateInput by remember(agent.ratePercent) { mutableStateOf(agent.ratePercent.toString()) }
     var typeInput by remember(agent.agentType) { mutableStateOf(agent.agentType ?: "external") }
 
-    Scaffold(
-        containerColor = AdminBgGray,
-        bottomBar = { AdminBottomBar(currentPage = AdminPage.USER_DETAILS, onNavigate = onBottomNavigate) }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(AdminBgGray)
-        ) {
-            RoleTopBar(roleTitle = "Admin", userName = session?.user?.name ?: "Admin")
-
-            AdminSubHeader(title = "Master User Details", onBack = onBack)
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // 1. Top Profile & Stats Card
-                LeftAccentCard(
-                    accentColor = AdminDarkBlue,
-                    modifier = Modifier.fillMaxWidth(),
-                    cornerRadius = 20.dp,
-                    leftBorderWidth = 4.dp,
-                    contentPadding = PaddingValues(14.dp)
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(68.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(AdminPrimaryBlue.copy(alpha = 0.12f))
-                                    .border(1.5.dp, AdminPrimaryBlue, RoundedCornerShape(14.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = agent.name,
-                                    tint = AdminPrimaryBlue,
-                                    modifier = Modifier.size(40.dp)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = agent.name,
-                                    color = Color.Black,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "${agent.role.uppercase()} • ${agent.agentCode}",
-                                    color = AdminPrimaryBlue,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(Color(0xFFF2F2F2))
-                                        .border(1.dp, Color.LightGray, RoundedCornerShape(10.dp))
-                                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = agent.email,
-                                            color = Color.Black,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Text(
-                                            text = "Tel: ${agent.phoneNumber ?: "08123456789"}",
-                                            color = Color.DarkGray,
-                                            fontSize = 9.sp
-                                        )
-                                    }
-                                    Box(
-                                        modifier = Modifier
-                                            .size(26.dp)
-                                            .clip(CircleShape)
-                                            .background(AdminPrimaryBlue)
-                                            .clickable { showEditRateDialog = true },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Edit,
-                                            contentDescription = "Edit Rate",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            LeftAccentCard(
-                                accentColor = AdminGreen,
-                                modifier = Modifier.weight(1f),
-                                cornerRadius = 12.dp,
-                                leftBorderWidth = 4.dp,
-                                contentPadding = PaddingValues(10.dp)
-                            ) {
-                                Column {
-                                    Text("Commission Rate", fontSize = 9.5.sp, color = Color.DarkGray, fontWeight = FontWeight.SemiBold)
-                                    Text("${agent.ratePercent}%", fontSize = 16.sp, color = Color.Black, fontWeight = FontWeight.ExtraBold)
-                                }
-                            }
-                            LeftAccentCard(
-                                accentColor = AdminPrimaryBlue,
-                                modifier = Modifier.weight(1f),
-                                cornerRadius = 12.dp,
-                                leftBorderWidth = 4.dp,
-                                contentPadding = PaddingValues(10.dp)
-                            ) {
-                                Column {
-                                    Text("Agent Scheme", fontSize = 9.5.sp, color = Color.DarkGray, fontWeight = FontWeight.SemiBold)
-                                    Text((agent.agentType ?: "External").replaceFirstChar { it.uppercase() }, fontSize = 15.sp, color = Color.Black, fontWeight = FontWeight.ExtraBold)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 2. Agent Performance & Conversion Overview Box
-                LeftAccentCard(
-                    accentColor = AdminGreen,
-                    modifier = Modifier.fillMaxWidth(),
-                    cornerRadius = 18.dp,
-                    leftBorderWidth = 4.dp,
-                    contentPadding = PaddingValues(16.dp)
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "Agent Performance Summary",
-                            color = Color.Black,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text("Total Deals Closed", fontSize = 10.sp, color = Color.DarkGray)
-                                Text("10 Deals", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-                            }
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text("Monthly Velocity", fontSize = 10.sp, color = Color.DarkGray)
-                                Text("2.4 deals/month", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = AdminPrimaryBlue)
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text("Closing Conversion Ratio (78%)", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = Color.Black)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        LinearProgressIndicator(
-                            progress = { 0.78f },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(8.dp)
-                                .clip(RoundedCornerShape(4.dp)),
-                            color = AdminGreen,
-                            trackColor = Color(0xFFE0E0E0)
-                        )
-                    }
-                }
-
-                // 3. Agent Details & Commission Rules Card
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
-                        .border(1.dp, Color.Black, RoundedCornerShape(18.dp))
-                        .background(Color.White)
-                        .padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = "Agency Hierarchy & Commission Policy",
-                        color = Color.Black,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "• Agent Code: ${agent.agentCode} (${agent.role.uppercase()})",
-                        color = Color.DarkGray,
-                        fontSize = 10.5.sp
-                    )
-                    Text(
-                        text = "• Profit Sharing: ${if ((agent.agentType ?: "external") == "internal") "Internal Agent (100% PT Integra Cipta Data)" else "External Agent (${agent.ratePercent}% Deal Cut)"}",
-                        color = Color.DarkGray,
-                        fontSize = 10.5.sp
-                    )
-                    Text(
-                        text = "• Account Status: ${if (agent.isActive) "Active & Verified" else "Deactivated"}",
-                        color = Color.DarkGray,
-                        fontSize = 10.5.sp
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Button(
-                        onClick = { showEditRateDialog = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = AdminPrimaryBlue),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth().height(36.dp)
-                    ) {
-                        Text("Update Commission Rate (%)", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-    }
+    IntegraModernAdminUserDetailsScreen(
+        userName = session?.user?.name ?: "Admin",
+        agent = agent,
+        onBack = onBack,
+        onBottomNavigate = onBottomNavigate,
+        onEditRateClick = { showEditRateDialog = true }
+    )
 
     if (showEditRateDialog) {
         AlertDialog(
@@ -1956,186 +958,16 @@ fun AdminMasterItemScreenContent(
     onAddClick: () -> Unit = {},
     onBottomNavigate: (AdminPage) -> Unit = {}
 ) {
-    val categoryMap = remember(categories) { categories.associateBy { it.id } }
-
-    Scaffold(
-        containerColor = AdminBgGray,
-        bottomBar = { AdminBottomBar(currentPage = AdminPage.MASTER_ITEM, onNavigate = onBottomNavigate) }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(AdminBgGray)
-        ) {
-            RoleTopBar(roleTitle = "Admin", userName = userName)
-
-            AdminSubHeader(
-                title = "Master Item",
-                onBack = onBack,
-                trailingContent = {
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(AdminPrimaryBlue)
-                            .clickable { onAddClick() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add",
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            )
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .border(1.dp, Color.Black, RoundedCornerShape(24.dp))
-                    .background(Color.White)
-                    .verticalScroll(rememberScrollState())
-                    .padding(14.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    AdminTabPill(
-                        label = "All Items",
-                        selected = selectedTab == 0,
-                        onClick = { onSelectTab(0) }
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    AdminTabPill(
-                        label = "Categories",
-                        selected = selectedTab == 1,
-                        onClick = { onSelectTab(1) }
-                    )
-                }
-                HorizontalDivider(color = Color.LightGray, thickness = 1.dp)
-                Spacer(modifier = Modifier.height(10.dp))
-
-                if (selectedTab == 0) {
-                    val displayItems = if (items.isNotEmpty()) items else listOf(
-                        MasterItemDto(1, 1, "ITM-001", "Pembuatan Website", 15000.0, "Paket Website Korporat & Hosting"),
-                        MasterItemDto(2, 1, "ITM-002", "Enterprise ERP System", 45000.0, "Modul Keuangan, HR, dan Inventory"),
-                        MasterItemDto(3, 1, "ITM-003", "Learning Management System", 25000.0, "Platform E-Learning Terpadu")
-                    )
-
-                    displayItems.forEachIndexed { idx, item ->
-                        LeftAccentCard(
-                            accentColor = if (idx % 2 == 0) AdminPrimaryBlue else AdminGreen,
-                            modifier = Modifier.fillMaxWidth(),
-                            cornerRadius = 14.dp,
-                            leftBorderWidth = 4.dp,
-                            contentPadding = PaddingValues(12.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = item.itemName,
-                                        color = Color.Black,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "Code: ${item.itemCode} • ${categoryMap[item.categoryId]?.categoryName ?: "Software Development"}",
-                                        color = AdminPrimaryBlue,
-                                        fontSize = 9.5.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    if (!item.description.isNullOrBlank()) {
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = item.description,
-                                            color = Color.DarkGray,
-                                            fontSize = 9.5.sp,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = adminMoney(item.basePrice),
-                                    color = Color.Black,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.ExtraBold
-                                )
-                            }
-                        }
-                        if (idx < displayItems.lastIndex) {
-                            Spacer(modifier = Modifier.height(10.dp))
-                        }
-                    }
-                } else {
-                    val displayCats = if (categories.isNotEmpty()) categories else listOf(
-                        MasterCategoryDto(1, "Software Development", "Aplikasi Mobile dan Website"),
-                        MasterCategoryDto(2, "Enterprise ERP & CRM", "Sistem Manajemen Korporat"),
-                        MasterCategoryDto(3, "Clinic & Healthcare System", "Sistem Informasi Klinik Terpadu")
-                    )
-
-                    displayCats.forEachIndexed { idx, cat ->
-                        LeftAccentCard(
-                            accentColor = AdminDarkBlue,
-                            modifier = Modifier.fillMaxWidth(),
-                            cornerRadius = 14.dp,
-                            leftBorderWidth = 4.dp,
-                            contentPadding = PaddingValues(14.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = cat.categoryName,
-                                        color = Color.Black,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = cat.description ?: "Kategori produk layanan resmi PT Integra Cipta Data",
-                                        color = Color.DarkGray,
-                                        fontSize = 10.sp
-                                    )
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .background(AdminPrimaryBlue.copy(alpha = 0.12f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Inventory,
-                                        contentDescription = cat.categoryName,
-                                        tint = AdminPrimaryBlue,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-                        if (idx < displayCats.lastIndex) {
-                            Spacer(modifier = Modifier.height(10.dp))
-                        }
-                    }
-                }
-            }
-        }
-    }
+    IntegraModernAdminMasterItemScreen(
+        userName = userName,
+        selectedTab = selectedTab,
+        onSelectTab = onSelectTab,
+        items = items,
+        categories = categories,
+        onBack = onBack,
+        onAddClick = onAddClick,
+        onBottomNavigate = onBottomNavigate
+    )
 }
 
 // ==========================================
@@ -2156,6 +988,8 @@ private fun AdminDealsReportsRoute(
     var commissions by remember { mutableStateOf<List<CommissionDto>>(emptyList()) }
     var refreshCount by remember { mutableIntStateOf(0) }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) } // 0 = Deal Approvals, 1 = Commissions
+    var selectedRateApproval by remember { mutableStateOf<ApprovalDto?>(null) }
+    var pendingPayout by remember { mutableStateOf<CommissionDto?>(null) }
 
     LaunchedEffect(session.token, refreshCount) {
         ApiService.adminProjects(session.token) { result ->
@@ -2168,6 +1002,37 @@ private fun AdminDealsReportsRoute(
                 if (err is ApiError && err.unauthorized) onExpired()
             }
         }
+    }
+
+    selectedRateApproval?.let { approval ->
+        IntegraAdminDealRateDialog(
+            token = session.token,
+            approvalId = approval.id,
+            onDismiss = { selectedRateApproval = null },
+            onUpdated = { refreshCount++ }
+        )
+    }
+
+    pendingPayout?.let { comm ->
+        AlertDialog(
+            onDismissRequest = { pendingPayout = null },
+            title = { Text("Konfirmasi transfer komisi") },
+            text = { Text("Pastikan dana sudah ditransfer ke agen. Tindakan ini mencatat sisa komisi sebagai Paid, tetapi tidak melakukan transfer bank otomatis.") },
+            confirmButton = {
+                Button(onClick = {
+                    pendingPayout = null
+                    ApiService.adminPayRemainingCommission(session.token, comm.id) { result ->
+                        result.onSuccess {
+                            Toast.makeText(context, "Pencairan komisi tercatat", Toast.LENGTH_SHORT).show()
+                            refreshCount++
+                        }.onFailure { err ->
+                            Toast.makeText(context, err.message ?: "Pencairan gagal", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) { Text("Sudah Transfer") }
+            },
+            dismissButton = { TextButton(onClick = { pendingPayout = null }) { Text("Batal") } }
+        )
     }
 
     val pendingApprovals = approvals.filter { it.status == "pending" }
@@ -2187,6 +1052,12 @@ private fun AdminDealsReportsRoute(
 
             AdminSubHeader(title = "Deals Reports", onBack = onBack)
 
+            AdminV3PageHero(
+                title = "Pending approvals",
+                subtitle = "Review permintaan Deal dan komisi agent",
+                icon = Icons.Default.CheckCircle
+            )
+
             // Top Summary Cards
             Row(
                 modifier = Modifier
@@ -2194,7 +1065,7 @@ private fun AdminDealsReportsRoute(
                     .padding(horizontal = 14.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                LeftAccentCard(
+                AdminV3AccentCard(
                     accentColor = AdminGreen,
                     modifier = Modifier
                         .weight(1f)
@@ -2211,7 +1082,7 @@ private fun AdminDealsReportsRoute(
                         Text("${pendingApprovals.size}", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black, modifier = Modifier.align(Alignment.End))
                     }
                 }
-                LeftAccentCard(
+                AdminV3AccentCard(
                     accentColor = AdminDarkBlue,
                     modifier = Modifier
                         .weight(1f)
@@ -2237,8 +1108,9 @@ private fun AdminDealsReportsRoute(
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .shadow(3.dp, RoundedCornerShape(24.dp))
                     .clip(RoundedCornerShape(24.dp))
-                    .border(1.dp, Color.Black, RoundedCornerShape(24.dp))
+                    .border(1.dp, Color(0xFFE4EBF5), RoundedCornerShape(24.dp))
                     .background(Color.White)
                     .verticalScroll(rememberScrollState())
                     .padding(14.dp)
@@ -2256,14 +1128,14 @@ private fun AdminDealsReportsRoute(
                         onClick = { selectedTab = 1 }
                     )
                 }
-                HorizontalDivider(color = Color.LightGray, thickness = 1.dp)
+                HorizontalDivider(color = Color(0xFFE4EBF5), thickness = 1.dp)
                 Spacer(modifier = Modifier.height(10.dp))
 
                 if (selectedTab == 0) {
                     // Exclude projects that are already cancelled / no_deal
                     val nonCancelledProjects = projects.filter { p ->
                         !p.status.equals("no_deal", ignoreCase = true) &&
-                            !p.status.equals("cancelled", ignoreCase = true)
+                                !p.status.equals("cancelled", ignoreCase = true)
                     }
 
                     if (nonCancelledProjects.isEmpty()) {
@@ -2282,7 +1154,7 @@ private fun AdminDealsReportsRoute(
                                 else -> AdminRed
                             }
 
-                            LeftAccentCard(
+                            AdminV3AccentCard(
                                 accentColor = accent,
                                 modifier = Modifier.fillMaxWidth(),
                                 cornerRadius = 14.dp,
@@ -2333,88 +1205,51 @@ private fun AdminDealsReportsRoute(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(Color(0xFFD9D9D9))
-                                                .clickable {
-                                                    onOpenDealDetails(
-                                                        DealDetailSelection(
-                                                            projectId = proj.id,
-                                                            clientName = proj.clientName,
-                                                            initialPrice = proj.dealValue,
-                                                            agentResponsible = proj.agentCode ?: "UPL-001"
-                                                        )
-                                                    )
-                                                }
-                                                .padding(horizontal = 12.dp, vertical = 4.dp)
-                                        ) {
-                                            Text(
-                                                text = "see details",
-                                                color = Color.Black,
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
+                                        OutlinedButton(onClick = {
+                                            onOpenDealDetails(DealDetailSelection(
+                                                projectId = proj.id, clientName = proj.clientName,
+                                                initialPrice = proj.dealValue,
+                                                agentResponsible = proj.agentCode ?: "-"
+                                            ))
+                                        }) { Text("Detail", fontSize = 11.sp) }
+                                        if (pendingApp != null) {
+                                            TextButton(onClick = { selectedRateApproval = pendingApp }) {
+                                                Text("Sepakati Rate", fontSize = 11.sp)
+                                            }
                                         }
-
-                                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(Color(0xFF98FB98))
-                                                    .border(1.dp, AdminGreen, RoundedCornerShape(8.dp))
-                                                    .clickable {
-                                                        if (pendingApp != null) {
-                                                            ApiService.adminReviewApproval(session.token, pendingApp.id, "approved") {
-                                                                Toast.makeText(context, "Deal Approved & Commission Calculated!", Toast.LENGTH_SHORT).show()
-                                                                refreshCount++
-                                                            }
-                                                        } else {
-                                                            ApiService.updateProjectStatus(session.token, proj.id, "deal", null) {
-                                                                Toast.makeText(context, "Deal Verified", Toast.LENGTH_SHORT).show()
-                                                                refreshCount++
-                                                            }
+                                    }
+                                    if (pendingApp != null) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Button(
+                                                onClick = {
+                                                    ApiService.adminReviewApproval(session.token, pendingApp.id, "approved") { result ->
+                                                        result.onSuccess {
+                                                            Toast.makeText(context, "Deal disetujui", Toast.LENGTH_SHORT).show()
+                                                            refreshCount++
+                                                        }.onFailure { error ->
+                                                            Toast.makeText(context, error.message ?: "Rate belum disepakati", Toast.LENGTH_LONG).show()
                                                         }
                                                     }
-                                                    .padding(horizontal = 12.dp, vertical = 4.dp)
-                                            ) {
-                                                Text("Accept", color = AdminGreen, fontSize = 9.5.sp, fontWeight = FontWeight.Bold)
-                                            }
-
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(Color(0xFFFFB3B3))
-                                                    .border(1.dp, AdminRed, RoundedCornerShape(8.dp))
-                                                    .clickable {
-                                                        if (pendingApp != null) {
-                                                            ApiService.adminReviewApproval(
-                                                                session.token,
-                                                                pendingApp.id,
-                                                                "rejected",
-                                                                "Declined by Admin"
-                                                            ) {
-                                                                ApiService.updateProjectStatus(session.token, proj.id, "no_deal", "Declined by Admin") {
-                                                                    Toast.makeText(context, "Deal Declined", Toast.LENGTH_SHORT).show()
-                                                                    refreshCount++
-                                                                }
-                                                            }
-                                                        } else {
-                                                            ApiService.updateProjectStatus(
-                                                                session.token,
-                                                                proj.id,
-                                                                "no_deal",
-                                                                "Declined by Admin"
-                                                            ) {
-                                                                Toast.makeText(context, "Marked Declined", Toast.LENGTH_SHORT).show()
-                                                                refreshCount++
-                                                            }
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                                colors = ButtonDefaults.buttonColors(containerColor = AdminGreen)
+                                            ) { Text("Approve Deal", fontSize = 11.sp) }
+                                            OutlinedButton(
+                                                onClick = {
+                                                    ApiService.adminReviewApproval(session.token, pendingApp.id, "rejected", "Ditolak Admin") { result ->
+                                                        result.onSuccess {
+                                                            Toast.makeText(context, "Permintaan Deal ditolak", Toast.LENGTH_SHORT).show()
+                                                            refreshCount++
+                                                        }.onFailure { error ->
+                                                            Toast.makeText(context, error.message ?: "Gagal menolak", Toast.LENGTH_LONG).show()
                                                         }
                                                     }
-                                                    .padding(horizontal = 12.dp, vertical = 4.dp)
-                                            ) {
-                                                Text("Decline", color = AdminRed, fontSize = 9.5.sp, fontWeight = FontWeight.Bold)
-                                            }
+                                                },
+                                                modifier = Modifier.weight(1f)
+                                            ) { Text("Tolak", fontSize = 11.sp) }
                                         }
                                     }
                                 }
@@ -2435,7 +1270,7 @@ private fun AdminDealsReportsRoute(
                     } else {
                         commissions.forEachIndexed { idx, comm ->
                             val proj = projectMap[comm.projectId]
-                            LeftAccentCard(
+                            AdminV3AccentCard(
                                 accentColor = if (comm.payoutStatus == "paid") AdminGreen else AdminPrimaryBlue,
                                 modifier = Modifier.fillMaxWidth(),
                                 cornerRadius = 14.dp,
@@ -2474,9 +1309,13 @@ private fun AdminDealsReportsRoute(
                                                     .clip(RoundedCornerShape(8.dp))
                                                     .background(AdminPrimaryBlue)
                                                     .clickable {
-                                                        ApiService.adminApproveCommission(session.token, comm.id) {
-                                                            Toast.makeText(context, "Commission Approved!", Toast.LENGTH_SHORT).show()
-                                                            refreshCount++
+                                                        ApiService.adminApproveCommission(session.token, comm.id) { result ->
+                                                            result.onSuccess {
+                                                                Toast.makeText(context, "Komisi disetujui", Toast.LENGTH_SHORT).show()
+                                                                refreshCount++
+                                                            }.onFailure { error ->
+                                                                Toast.makeText(context, error.message ?: "Komisi belum dapat disetujui", Toast.LENGTH_LONG).show()
+                                                            }
                                                         }
                                                     }
                                                     .padding(horizontal = 10.dp, vertical = 4.dp)
@@ -2489,14 +1328,7 @@ private fun AdminDealsReportsRoute(
                                                     .clip(RoundedCornerShape(8.dp))
                                                     .background(AdminGreen)
                                                     .clickable {
-                                                        ApiService.adminPayoutCommission(
-                                                            session.token,
-                                                            comm.id,
-                                                            comm.totalCommissionAmount
-                                                        ) {
-                                                            Toast.makeText(context, "Commission Paid Out!", Toast.LENGTH_SHORT).show()
-                                                            refreshCount++
-                                                        }
+                                                        pendingPayout = comm
                                                     }
                                                     .padding(horizontal = 10.dp, vertical = 4.dp)
                                             ) {
@@ -2568,6 +1400,12 @@ private fun AdminMasterProjectRoute(
 
             AdminSubHeader(title = "Master Project", onBack = onBack)
 
+            AdminV3PageHero(
+                title = "Project pipeline",
+                subtitle = "Pantau project aktif, deal, dan riwayat",
+                icon = Icons.Default.Folder
+            )
+
             // Top Summary Cards (Matching CRM Style)
             Row(
                 modifier = Modifier
@@ -2575,7 +1413,7 @@ private fun AdminMasterProjectRoute(
                     .padding(horizontal = 14.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                LeftAccentCard(
+                AdminV3AccentCard(
                     accentColor = AdminGreen,
                     modifier = Modifier
                         .weight(1f)
@@ -2592,7 +1430,7 @@ private fun AdminMasterProjectRoute(
                         Text(adminMoney(totalValue), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black, modifier = Modifier.align(Alignment.End))
                     }
                 }
-                LeftAccentCard(
+                AdminV3AccentCard(
                     accentColor = AdminDarkBlue,
                     modifier = Modifier
                         .weight(1f)
@@ -2618,8 +1456,9 @@ private fun AdminMasterProjectRoute(
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .shadow(3.dp, RoundedCornerShape(24.dp))
                     .clip(RoundedCornerShape(24.dp))
-                    .border(1.dp, Color.Black, RoundedCornerShape(24.dp))
+                    .border(1.dp, Color(0xFFE4EBF5), RoundedCornerShape(24.dp))
                     .background(Color.White)
                     .verticalScroll(rememberScrollState())
                     .padding(14.dp)
@@ -2631,13 +1470,12 @@ private fun AdminMasterProjectRoute(
                     Spacer(modifier = Modifier.width(6.dp))
                     AdminTabPill("Cancelled", selectedTab == 2) { selectedTab = 2 }
                 }
-                HorizontalDivider(color = Color.LightGray, thickness = 1.dp)
+                HorizontalDivider(color = Color(0xFFE4EBF5), thickness = 1.dp)
                 Spacer(modifier = Modifier.height(10.dp))
 
-                val listToRender = if (currentList.isNotEmpty()) currentList else listOf(
-                    ProjectDto(1, "PRJ-001", agentCode = "DNL-001", clientName = "PT Hakumanatata", status = "follow_up", dealValue = 50000.0, createdAt = "2026-02-18"),
-                    ProjectDto(2, "PRJ-002", agentCode = "UPL-001", clientName = "PT Surya Makmur", status = "deal", dealValue = 35000.0, createdAt = "2026-02-18")
-                )
+                val listToRender = currentList
+
+                if (listToRender.isEmpty()) AdminV3EmptyState("Belum ada project pada kategori ini.")
 
                 listToRender.forEachIndexed { idx, p ->
                     val days = adminDaysSince(p.createdAt)
@@ -2651,7 +1489,7 @@ private fun AdminMasterProjectRoute(
                         else -> AdminRed
                     }
 
-                    LeftAccentCard(
+                    AdminV3AccentCard(
                         accentColor = accent,
                         modifier = Modifier.fillMaxWidth(),
                         cornerRadius = 14.dp,
@@ -2777,6 +1615,7 @@ private fun AdminMasterPaymentsRoute(
     var refreshCount by remember { mutableIntStateOf(0) }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) } // 0=Ongoing, 1=Paid, 2=Overdue
     var showCreateInvoiceDialog by remember { mutableStateOf(false) }
+    var pendingInvoicePayment by remember { mutableStateOf<InvoiceDto?>(null) }
 
     LaunchedEffect(session.token, refreshCount) {
         ApiService.adminPayments(session.token) { result ->
@@ -2790,10 +1629,36 @@ private fun AdminMasterPaymentsRoute(
         }
     }
 
+    pendingInvoicePayment?.let { inv ->
+        AlertDialog(
+            onDismissRequest = { pendingInvoicePayment = null },
+            title = { Text("Konfirmasi penerimaan pembayaran") },
+            text = { Text("Pastikan pembayaran klien benar-benar sudah diterima. Aksi ini mencatat sisa tagihan invoice sebagai lunas.") },
+            confirmButton = {
+                Button(onClick = {
+                    pendingInvoicePayment = null
+                    ApiService.adminMarkInvoiceFullyPaid(session.token, inv.id) { result ->
+                        result.onSuccess {
+                            Toast.makeText(context, "Invoice tercatat lunas", Toast.LENGTH_SHORT).show()
+                            refreshCount++
+                        }.onFailure { err ->
+                            Toast.makeText(context, err.message ?: "Gagal mencatat pembayaran", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) { Text("Sudah Diterima") }
+            },
+            dismissButton = { TextButton(onClick = { pendingInvoicePayment = null }) { Text("Batal") } }
+        )
+    }
+
     val projectMap = remember(projects) { projects.associateBy { it.id } }
     val ongoingList = invoices.filter { it.status != "paid" }
     val paidList = invoices.filter { it.status == "paid" }
-    val overdueList = invoices.filter { it.status != "paid" }
+    val overdueList = invoices.filter { invoice ->
+        val due = invoice.dueDate?.take(10)
+        invoice.status != "paid" && !due.isNullOrBlank() &&
+            runCatching { java.time.LocalDate.parse(due).isBefore(java.time.LocalDate.now(java.time.ZoneId.of("Asia/Jakarta"))) }.getOrDefault(false)
+    }
 
     val currentList = when (selectedTab) {
         0 -> ongoingList
@@ -2835,6 +1700,12 @@ private fun AdminMasterPaymentsRoute(
                 }
             )
 
+            AdminV3PageHero(
+                title = "Payment management",
+                subtitle = "Kelola invoice dan status pembayaran",
+                icon = Icons.Default.AttachMoney
+            )
+
             // Top Summary Cards
             Row(
                 modifier = Modifier
@@ -2842,7 +1713,7 @@ private fun AdminMasterPaymentsRoute(
                     .padding(horizontal = 14.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                LeftAccentCard(
+                AdminV3AccentCard(
                     accentColor = AdminGreen,
                     modifier = Modifier
                         .weight(1f)
@@ -2859,7 +1730,7 @@ private fun AdminMasterPaymentsRoute(
                         Text("${paidList.size}", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black, modifier = Modifier.align(Alignment.End))
                     }
                 }
-                LeftAccentCard(
+                AdminV3AccentCard(
                     accentColor = AdminRed,
                     modifier = Modifier
                         .weight(1f)
@@ -2885,8 +1756,9 @@ private fun AdminMasterPaymentsRoute(
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .shadow(3.dp, RoundedCornerShape(24.dp))
                     .clip(RoundedCornerShape(24.dp))
-                    .border(1.dp, Color.Black, RoundedCornerShape(24.dp))
+                    .border(1.dp, Color(0xFFE4EBF5), RoundedCornerShape(24.dp))
                     .background(Color.White)
                     .verticalScroll(rememberScrollState())
                     .padding(14.dp)
@@ -2898,24 +1770,23 @@ private fun AdminMasterPaymentsRoute(
                     Spacer(modifier = Modifier.width(6.dp))
                     AdminTabPill("Overdue", selectedTab == 2) { selectedTab = 2 }
                 }
-                HorizontalDivider(color = Color.LightGray, thickness = 1.dp)
+                HorizontalDivider(color = Color(0xFFE4EBF5), thickness = 1.dp)
                 Spacer(modifier = Modifier.height(10.dp))
 
-                val listToRender = if (currentList.isNotEmpty()) currentList else listOf(
-                    InvoiceDto(1, "INV-2026-001", projectId = 1, totalAmount = 15000.0, dueDate = "2026-11-30", status = if (selectedTab == 1) "paid" else "unpaid"),
-                    InvoiceDto(2, "INV-2026-002", projectId = 2, totalAmount = 25000.0, dueDate = "2026-10-15", status = if (selectedTab == 1) "paid" else "unpaid")
-                )
+                val listToRender = currentList
+
+                if (listToRender.isEmpty()) AdminV3EmptyState("Belum ada invoice pada kategori ini.")
 
                 listToRender.forEachIndexed { idx, inv ->
                     val proj = projectMap[inv.projectId]
-                    val clientTitle = proj?.clientName ?: "PT Demo Sejahtera"
+                    val clientTitle = proj?.clientName ?: "Project #${inv.projectId}"
                     val accent = when (selectedTab) {
                         0 -> AdminPrimaryBlue
                         1 -> AdminGreen
                         else -> AdminRed
                     }
 
-                    LeftAccentCard(
+                    AdminV3AccentCard(
                         accentColor = accent,
                         modifier = Modifier.fillMaxWidth(),
                         cornerRadius = 14.dp,
@@ -3000,24 +1871,7 @@ private fun AdminMasterPaymentsRoute(
                                             .clip(RoundedCornerShape(8.dp))
                                             .background(AdminPrimaryBlue)
                                             .clickable {
-                                                if (inv.id > 0 && invoices.isNotEmpty()) {
-                                                    ApiService.adminCreatePayment(
-                                                        token = session.token,
-                                                        invoiceId = inv.id,
-                                                        amountPaid = inv.totalAmount
-                                                    ) { res ->
-                                                        res.onSuccess {
-                                                            Toast.makeText(context, "Invoice ${inv.invoiceNumber} marked as Paid!", Toast.LENGTH_SHORT).show()
-                                                            refreshCount++
-                                                        }
-                                                        res.onFailure { e ->
-                                                            Toast.makeText(context, e.message ?: "Payment recorded", Toast.LENGTH_SHORT).show()
-                                                            refreshCount++
-                                                        }
-                                                    }
-                                                } else {
-                                                    Toast.makeText(context, "Invoice marked as Paid!", Toast.LENGTH_SHORT).show()
-                                                }
+                                                pendingInvoicePayment = inv
                                             }
                                             .padding(horizontal = 12.dp, vertical = 5.dp)
                                     ) {
@@ -3120,6 +1974,7 @@ private fun AdminBroadcastRoute(
     val context = LocalContext.current
     var title by rememberSaveable { mutableStateOf("") }
     var message by rememberSaveable { mutableStateOf("") }
+    var audience by rememberSaveable { mutableStateOf("all") }
     var notifications by remember { mutableStateOf<List<NotificationDto>>(emptyList()) }
     var refreshCount by remember { mutableIntStateOf(0) }
     var selectedNotif by remember { mutableStateOf<NotificationDto?>(null) }
@@ -3149,68 +2004,52 @@ private fun AdminBroadcastRoute(
 
             AdminSubHeader(title = "Broadcast", onBack = onBack)
 
+            AdminV3PageHero(
+                title = "Team announcements",
+                subtitle = "Kirim informasi ke seluruh agent",
+                icon = Icons.Default.Campaign
+            )
+
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .shadow(3.dp, RoundedCornerShape(24.dp))
                     .clip(RoundedCornerShape(24.dp))
-                    .border(1.dp, Color.Black, RoundedCornerShape(24.dp))
+                    .border(1.dp, Color(0xFFE4EBF5), RoundedCornerShape(24.dp))
                     .background(Color.White)
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-                Text(
-                    text = "Title",
-                    color = Color.Black,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
+                Text("Create Broadcast", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color(0xFF18233D))
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("Title") },
+                    placeholder = { Text("Judul pengumuman") },
+                    shape = RoundedCornerShape(16.dp)
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(34.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(AdminFieldGray)
-                        .padding(horizontal = 10.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    BasicTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        singleLine = true,
-                        textStyle = TextStyle(color = Color.Black, fontSize = 11.sp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Announcements",
-                    color = Color.Black,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = message,
+                    onValueChange = { message = it },
+                    modifier = Modifier.fillMaxWidth().height(150.dp),
+                    label = { Text("Announcements") },
+                    placeholder = { Text("Tulis pesan untuk semua agent...") },
+                    shape = RoundedCornerShape(16.dp)
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(96.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(AdminFieldGray)
-                        .padding(10.dp)
-                ) {
-                    BasicTextField(
-                        value = message,
-                        onValueChange = { message = it },
-                        textStyle = TextStyle(color = Color.Black, fontSize = 11.sp),
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
 
                 Spacer(modifier = Modifier.height(14.dp))
+                Text("Penerima Broadcast", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("all" to "Semua", "upline" to "Upline", "downline" to "Downline").forEach { (key, label) ->
+                        FilterChip(selected = audience == key, onClick = { audience = key }, label = { Text(label, fontSize = 11.sp) })
+                    }
+                }
 
                 Button(
                     onClick = {
@@ -3218,7 +2057,10 @@ private fun AdminBroadcastRoute(
                             Toast.makeText(context, "Please fill Title and Announcements", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
-                        ApiService.adminBroadcast(session.token, title, message) { res ->
+                        ApiService.adminBroadcast(
+                            session.token, title, message,
+                            roles = when (audience) { "upline" -> listOf("upline"); "downline" -> listOf("downline"); else -> null }
+                        ) { res ->
                             res.onSuccess { r ->
                                 Toast.makeText(context, "Broadcast sent to ${r.recipients} agents!", Toast.LENGTH_SHORT).show()
                                 title = ""
@@ -3231,14 +2073,14 @@ private fun AdminBroadcastRoute(
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = AdminPrimaryBlue),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
-                        .fillMaxWidth(0.75f)
-                        .height(38.dp)
+                        .fillMaxWidth()
+                        .height(52.dp)
                         .align(Alignment.CenterHorizontally)
                 ) {
                     Text(
-                        text = "Send",
+                        text = "Send Broadcast",
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
@@ -3255,13 +2097,12 @@ private fun AdminBroadcastRoute(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
 
-                val listToRender = if (notifications.isNotEmpty()) notifications.take(5) else listOf(
-                    NotificationDto(id = 1, title = "Monthly Target Announcement", message = "All Upline and Downline agents are invited to review Q4 targets.", type = "broadcast", isRead = false, createdAt = "2025-11-08"),
-                    NotificationDto(id = 2, title = "New Master Item Added", message = "Enterprise ERP & Clinic System packages updated in catalog.", type = "broadcast", isRead = false, createdAt = "2025-11-08")
-                )
+                val listToRender = notifications.take(5)
+
+                if (listToRender.isEmpty()) AdminV3EmptyState("Belum ada broadcast sebelumnya.")
 
                 listToRender.forEachIndexed { idx, n ->
-                    LeftAccentCard(
+                    AdminV3AccentCard(
                         accentColor = AdminGreen,
                         modifier = Modifier.fillMaxWidth(),
                         cornerRadius = 12.dp,
@@ -3358,6 +2199,8 @@ private fun AdminExportReportsRoute(
     var activeReportKey by remember { mutableStateOf<String?>(null) }
     var reportRows by remember { mutableStateOf<List<Map<String, Any?>>>(emptyList()) }
     var selectedFormat by rememberSaveable { mutableStateOf("PDF") }
+    var reportFrom by rememberSaveable { mutableStateOf("") }
+    var reportTo by rememberSaveable { mutableStateOf("") }
     var savedFileMessage by remember { mutableStateOf<String?>(null) }
 
     val primaryReports = listOf(
@@ -3381,7 +2224,9 @@ private fun AdminExportReportsRoute(
             context = context,
             token = session.token,
             reportType = typeKey,
-            format = format
+            format = format,
+            from = reportFrom.ifBlank { null },
+            to = reportTo.ifBlank { null }
         ) { res ->
             res.onSuccess { savedPath ->
                 savedFileMessage = "Saved to $savedPath"
@@ -3394,13 +2239,29 @@ private fun AdminExportReportsRoute(
     }
 
     fun loadReport(label: String, typeKey: String) {
+        val from = runCatching { if (reportFrom.isBlank()) null else java.time.LocalDate.parse(reportFrom.trim()) }.getOrElse {
+            Toast.makeText(context, "Tanggal Mulai harus YYYY-MM-DD", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val to = runCatching { if (reportTo.isBlank()) null else java.time.LocalDate.parse(reportTo.trim()) }.getOrElse {
+            Toast.makeText(context, "Tanggal Selesai harus YYYY-MM-DD", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (from != null && to != null && from.isAfter(to)) {
+            Toast.makeText(context, "Tanggal Mulai harus sebelum Tanggal Selesai", Toast.LENGTH_SHORT).show()
+            return
+        }
         activeReportKey = typeKey
         savedFileMessage = null
         // 1. Download the actual PDF or Excel (.xlsx) file from the backend to the phone's Downloads folder
         triggerFileDownload(typeKey, selectedFormat)
 
         // 2. Also load the JSON rows to display the interactive preview table
-        ApiService.adminExportReport(session.token, typeKey) { res ->
+        ApiService.adminExportReport(
+            session.token, typeKey,
+            from = reportFrom.ifBlank { null },
+            to = reportTo.ifBlank { null }
+        ) { res ->
             res.onSuccess { dto ->
                 reportPreviewTitle = "$label ($selectedFormat)"
                 reportRows = dto.data
@@ -3425,13 +2286,20 @@ private fun AdminExportReportsRoute(
 
             AdminSubHeader(title = "Export Reports", onBack = onBack)
 
+            AdminV3PageHero(
+                title = "Business reports",
+                subtitle = "Unduh laporan dan pantau performa",
+                icon = Icons.Default.Download
+            )
+
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .shadow(3.dp, RoundedCornerShape(24.dp))
                     .clip(RoundedCornerShape(24.dp))
-                    .border(1.dp, Color.Black, RoundedCornerShape(24.dp))
+                    .border(1.dp, Color(0xFFE4EBF5), RoundedCornerShape(24.dp))
                     .background(Color.White)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 16.dp),
@@ -3468,8 +2336,22 @@ private fun AdminExportReportsRoute(
                     }
                 }
 
+                Text("Filter Periode (opsional)", fontWeight = FontWeight.SemiBold, color = AdminPrimaryBlue)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = reportFrom, onValueChange = { reportFrom = it },
+                        label = { Text("Mulai") }, placeholder = { Text("YYYY-MM-DD") },
+                        singleLine = true, modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = reportTo, onValueChange = { reportTo = it },
+                        label = { Text("Selesai") }, placeholder = { Text("YYYY-MM-DD") },
+                        singleLine = true, modifier = Modifier.weight(1f)
+                    )
+                }
+
                 primaryReports.forEach { (label, typeKey) ->
-                    LeftAccentCard(
+                    AdminV3AccentCard(
                         accentColor = AdminPrimaryBlue,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -3518,7 +2400,7 @@ private fun AdminExportReportsRoute(
                 )
 
                 additionalBookReports.forEach { (label, typeKey) ->
-                    LeftAccentCard(
+                    AdminV3AccentCard(
                         accentColor = AdminGreen,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -3632,18 +2514,16 @@ private fun AdminTabPill(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-            .background(if (selected) Color(0xFFD9D9D9) else Color.Transparent)
-            .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        contentAlignment = Alignment.Center
+    Surface(
+        modifier = Modifier.clickable { onClick() },
+        color = if (selected) AdminPrimaryBlue else Color(0xFFF0F4FA),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Text(
             text = label,
-            color = Color.Black,
-            fontSize = 10.sp,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+            color = if (selected) Color.White else Color(0xFF64738E),
+            fontSize = 12.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
         )
     }

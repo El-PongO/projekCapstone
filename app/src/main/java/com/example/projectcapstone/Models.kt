@@ -379,7 +379,9 @@ data class AdminOverviewResponse(
 
 data class BroadcastRequest(
     val title: String,
-    val message: String
+    val message: String,
+    val roles: List<String>? = null,
+    val agentCodes: List<String>? = null
 )
 
 data class BroadcastResponse(
@@ -399,6 +401,15 @@ data class CreateMasterItemRequest(
     val itemName: String,
     val basePrice: Double = 0.0,
     val description: String? = null
+)
+
+data class InvoiceDetailDto(
+    val invoice: InvoiceDto = InvoiceDto(),
+    val paidAmount: Double = 0.0
+)
+data class CommissionDetailDto(
+    val commission: CommissionDto = CommissionDto(),
+    val paidAmount: Double = 0.0
 )
 
 data class InvoiceDto(
@@ -434,6 +445,37 @@ data class CommissionDto(
     @Json(name = "payout_status") val payoutStatus: String = "pending",
     @Json(name = "created_at") val createdAt: String? = null
 )
+
+// Kesepakatan rate berlaku per proyek, tidak mengubah rate global agen.
+data class DealRateOfferDto(
+    val id: Long = 0,
+    val projectId: Long = 0,
+    val projectCode: String = "",
+    val ratePercent: Double = 0.0,
+    val status: String = "pending",
+    val projectStatus: String = "follow_up"
+)
+data class DealRateOfferInfoDto(
+    val id: Long = 0,
+    val ratePercent: Double = 0.0,
+    val status: String = "pending"
+)
+data class DealRateRecipientDto(
+    val agentId: Long = 0,
+    val agentCode: String = "",
+    val role: String = "",
+    val agentType: String = "",
+    val defaultRate: Double = 0.0,
+    val offer: DealRateOfferInfoDto? = null
+)
+data class DealRateReviewDto(
+    val approvalId: Long = 0,
+    val projectId: Long = 0,
+    val approvalStatus: String = "pending",
+    val recipients: List<DealRateRecipientDto> = emptyList()
+)
+data class DealRateProposalRequest(val ratePercent: Double)
+data class DealRateResponseRequest(val decision: String)
 
 data class ApprovalReviewRequest(
     val decision: String,
@@ -492,3 +534,50 @@ data class CreatePayoutRequest(
 data class RegisterDeviceTokenRequest(
     val fcmToken: String
 )
+
+// Privasi leaderboard: response tidak pernah mengirim nama, email, maupun nomor HP.
+data class LeaderboardEntryDto(
+    val rank: Int = 0,
+    val agentCode: String = "",
+    val totalDeals: Int = 0,
+    val totalDealValue: Double = 0.0
+)
+data class LeaderboardResponseDto(
+    val ranking: List<LeaderboardEntryDto> = emptyList()
+)
+
+// Modul Workspace Proyek (milestone, jadwal, lampiran).
+data class ProjectWorkspaceDto(
+    val projectId: Long = 0,
+    val progressPercent: Int = 0,
+    val completedMilestones: Int = 0,
+    val totalMilestones: Int = 0,
+    val canEdit: Boolean = false,
+    val milestones: List<ProjectWorkspaceMilestoneDto> = emptyList(),
+    val tasks: List<ProjectWorkspaceTaskDto> = emptyList(),
+    val meetings: List<ProjectWorkspaceMeetingDto> = emptyList(),
+    val documents: List<ProjectWorkspaceDocumentDto> = emptyList()
+)
+data class ProjectWorkspaceMilestoneDto(
+    val id: Long = 0,
+    val title: String = "",
+    val status: String = "pending"
+)
+data class ProjectWorkspaceTaskDto(
+    val id: Long = 0,
+    val title: String = "",
+    @Json(name = "due_at") val dueAt: String? = null
+)
+data class ProjectWorkspaceMeetingDto(
+    val id: Long = 0,
+    @Json(name = "meeting_title") val meetingTitle: String = "",
+    @Json(name = "meeting_at") val meetingAt: String? = null
+)
+data class ProjectWorkspaceDocumentDto(
+    val id: Long = 0,
+    @Json(name = "original_filename") val originalFilename: String = ""
+)
+data class CreateMilestoneRequest(val title: String)
+data class MilestoneStatusRequest(val status: String = "completed")
+data class CreateFollowUpRequest(val title: String, val dueAt: String)
+data class CreateMeetingRequest(val meetingTitle: String, val meetingAt: String)

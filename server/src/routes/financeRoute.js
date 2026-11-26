@@ -59,8 +59,10 @@ commissions.post('/:id/approve',roles('admin'),wrap(async(req,res)=>{
   if(c.payout_status!=='pending')throw fail(409,'Komisi sudah diproses');
   const project=await Project.findByPk(c.project_id,{transaction,lock:transaction.LOCK.UPDATE});
   if(!project||project.status!=='deal')throw fail(409,'Hanya komisi proyek Deal yang dapat disetujui');
+  if(project.execution_stage!=='completed')throw fail(409,'Komisi menunggu agen pemilik menandai proyek selesai');
   const bills=await Invoice.findAll({where:{project_id:c.project_id},transaction,lock:transaction.LOCK.UPDATE});
   if(!bills.length)throw fail(409,'Komisi belum dapat disetujui: invoice proyek belum tersedia');
+  if(round(bills.reduce((sum,b)=>sum+num(b.total_amount),0))<round(num(project.deal_value)))throw fail(409,'Total invoice belum mencakup nilai Deal proyek');
   const receipt=await Payment.findAll({where:{invoice_id:{[Op.in]:bills.map(b=>b.id)}},transaction});
   const paid=new Map();for(const p of receipt)paid.set(Number(p.invoice_id),(paid.get(Number(p.invoice_id))||0)+num(p.amount_paid));
   // Kebijakan konservatif: semua invoice proyek harus lunas sebelum komisi approved.

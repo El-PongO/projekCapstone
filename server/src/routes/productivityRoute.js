@@ -45,7 +45,7 @@ r.patch('/meetings/:id',wrap(async(req,res)=>{
  await m.update(v);res.json(m);
 }));
 // Milestones (status workflow).
-r.get('/projects/:id/milestones',wrap(async(req,res)=>{const p=await findProject(req.user,req.params.id);res.json(await ProjectMilestone.findAll({where:{project_id:p.id},order:[['due_date','ASC'],['id','ASC']]}));}));
+r.get('/projects/:id/milestones',wrap(async(req,res)=>{const p=await findProject(req.user,req.params.id);if(req.user.role!=='admin'&&Number(req.user.id)!==Number(p.agent_id))return res.json([]);res.json(await ProjectMilestone.findAll({where:{project_id:p.id},order:[['due_date','ASC'],['id','ASC']]}));}));
 r.post('/projects/:id/milestones',wrap(async(req,res)=>{
  const p=await findProject(req.user,req.params.id,true);const m=await ProjectMilestone.create({project_id:p.id,title:nonempty(req.body.title),description:optional(req.body.description,4000),status:'pending',due_date:req.body.dueDate?date(req.body.dueDate):null});res.status(201).json(m);
 }));

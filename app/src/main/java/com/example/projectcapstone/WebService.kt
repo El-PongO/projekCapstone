@@ -5,6 +5,7 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -28,6 +29,69 @@ interface WebService {
     suspend fun getMyUplineInfo(
         @Header("Authorization") token: String
     ): UplineInfoResponse
+
+    // Workspace: seluruh akses tetap divalidasi di backend, termasuk privasi Downline.
+    @GET("api/productivity/projects/{id}/overview")
+    suspend fun getProjectWorkspace(
+        @Header("Authorization") token: String,
+        @Path("id") projectId: Long
+    ): ProjectWorkspaceDto
+
+    @POST("api/productivity/projects/{id}/milestones")
+    suspend fun createProjectMilestone(
+        @Header("Authorization") token: String,
+        @Path("id") projectId: Long,
+        @Body body: CreateMilestoneRequest
+    ): ProjectWorkspaceMilestoneDto
+
+    @PATCH("api/productivity/milestones/{id}")
+    suspend fun updateProjectMilestone(
+        @Header("Authorization") token: String,
+        @Path("id") milestoneId: Long,
+        @Body body: MilestoneStatusRequest
+    ): ProjectWorkspaceMilestoneDto
+
+    @POST("api/productivity/projects/{id}/tasks")
+    suspend fun createProjectFollowUp(
+        @Header("Authorization") token: String,
+        @Path("id") projectId: Long,
+        @Body body: CreateFollowUpRequest
+    ): ProjectWorkspaceTaskDto
+
+    @POST("api/productivity/projects/{id}/meetings")
+    suspend fun createProjectMeeting(
+        @Header("Authorization") token: String,
+        @Path("id") projectId: Long,
+        @Body body: CreateMeetingRequest
+    ): ProjectWorkspaceMeetingDto
+
+    @retrofit2.http.Multipart
+    @POST("api/productivity/projects/{id}/documents")
+    suspend fun uploadProjectDocument(
+        @Header("Authorization") token: String,
+        @Path("id") projectId: Long,
+        @retrofit2.http.Part file: okhttp3.MultipartBody.Part,
+        @retrofit2.http.Part("documentType") type: okhttp3.RequestBody
+    ): ProjectWorkspaceDocumentDto
+
+    @retrofit2.http.Streaming
+    @GET("api/productivity/documents/{id}/download")
+    suspend fun downloadProjectDocument(
+        @Header("Authorization") token: String,
+        @Path("id") documentId: Long
+    ): okhttp3.ResponseBody
+
+    @retrofit2.http.DELETE("api/productivity/documents/{id}")
+    suspend fun deleteProjectDocument(
+        @Header("Authorization") token: String,
+        @Path("id") documentId: Long
+    ): OkResponse
+
+    // Leaderboard anonim untuk Admin, Upline dan Downline.
+    @GET("api/leaderboard")
+    suspend fun getLeaderboard(
+        @Header("Authorization") token: String
+    ): LeaderboardResponseDto
 
     // Notifications
     @GET("api/notifications")
@@ -218,12 +282,46 @@ interface WebService {
         @Query("status") status: String? = null
     ): List<ApprovalDto>
 
+    @GET("api/approvals/{id}/rates")
+    suspend fun getDealRateReview(
+        @Header("Authorization") token: String,
+        @Path("id") approvalId: Long
+    ): DealRateReviewDto
+
+    @PUT("api/approvals/{id}/rates/{agentId}")
+    suspend fun proposeDealRate(
+        @Header("Authorization") token: String,
+        @Path("id") approvalId: Long,
+        @Path("agentId") agentId: Long,
+        @Body request: DealRateProposalRequest
+    ): DealRateOfferInfoDto
+
+    @GET("api/approvals/my-rate-offers")
+    suspend fun getMyDealRates(@Header("Authorization") token: String, @Query("projectId") projectId: Long): List<DealRateOfferDto>
+
+    @POST("api/approvals/rates/{id}/respond")
+    suspend fun respondDealRate(
+        @Header("Authorization") token: String,
+        @Path("id") offerId: Long,
+        @Body request: DealRateResponseRequest
+    ): DealRateOfferInfoDto
+
     @POST("api/approvals/{id}/review")
     suspend fun reviewApproval(
         @Header("Authorization") token: String,
         @Path("id") id: Long,
         @Body body: ApprovalReviewRequest
     ): Map<String, Any?>
+
+    @GET("api/invoices/{id}")
+    suspend fun getInvoiceDetail(
+        @Header("Authorization") token: String, @Path("id") invoiceId: Long
+    ): InvoiceDetailDto
+
+    @GET("api/commissions/{id}")
+    suspend fun getCommissionDetail(
+        @Header("Authorization") token: String, @Path("id") commissionId: Long
+    ): CommissionDetailDto
 
     @GET("api/invoices")
     suspend fun getInvoices(
@@ -273,7 +371,9 @@ interface WebService {
     suspend fun getReportData(
         @Header("Authorization") token: String,
         @Path("type") type: String,
-        @Query("format") format: String = "json"
+        @Query("format") format: String = "json",
+        @Query("from") from: String? = null,
+        @Query("to") to: String? = null
     ): ReportResponseDto
 
     @retrofit2.http.Streaming
@@ -281,7 +381,9 @@ interface WebService {
     suspend fun downloadReportFile(
         @Header("Authorization") token: String,
         @Path("type") type: String,
-        @Query("format") format: String
+        @Query("format") format: String,
+        @Query("from") from: String? = null,
+        @Query("to") to: String? = null
     ): okhttp3.ResponseBody
 
     @retrofit2.http.Streaming

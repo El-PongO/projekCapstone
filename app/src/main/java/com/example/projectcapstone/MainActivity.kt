@@ -190,12 +190,14 @@ class MainActivity : ComponentActivity() {
                         DownlineAppScreen(
                             session = current,
                             onLogout = {
+                                ApiService.unregisterFcmDeviceToken(current.token)
                                 store.clear()
                                 session = null
                                 showPerformance = false
                                 showDownlines = false
                             },
                             onExpired = {
+                                ApiService.unregisterFcmDeviceToken(current.token)
                                 store.clear()
                                 session = null
                                 showPerformance = false
@@ -212,12 +214,14 @@ class MainActivity : ComponentActivity() {
                         UplineAppScreen(
                             session = current,
                             onLogout = {
+                                ApiService.unregisterFcmDeviceToken(current.token)
                                 store.clear()
                                 session = null
                                 showPerformance = false
                                 showDownlines = false
                             },
                             onExpired = {
+                                ApiService.unregisterFcmDeviceToken(current.token)
                                 store.clear()
                                 session = null
                                 showPerformance = false
@@ -234,12 +238,14 @@ class MainActivity : ComponentActivity() {
                         AdminAppScreen(
                             session = current,
                             onLogout = {
+                                ApiService.unregisterFcmDeviceToken(current.token)
                                 store.clear()
                                 session = null
                                 showPerformance = false
                                 showDownlines = false
                             },
                             onExpired = {
+                                ApiService.unregisterFcmDeviceToken(current.token)
                                 store.clear()
                                 session = null
                                 showPerformance = false
@@ -339,7 +345,7 @@ private fun LoginScreen(onLogin: (String, String, (Result<LoginSession>) -> Unit
                         modifier = Modifier.fillMaxWidth(), singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         visualTransformation = if (showPassword) VisualTransformation.None
-                            else PasswordVisualTransformation(),
+                        else PasswordVisualTransformation(),
                         trailingIcon = {
                             TextButton(onClick = { showPassword = !showPassword }) {
                                 Text(if (showPassword) "Tutup" else "Lihat", fontSize = 12.sp)
