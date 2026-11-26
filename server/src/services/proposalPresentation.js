@@ -31,7 +31,7 @@ function drawProposal(pdf, {title, number, projectCode, clientName, validUntil, 
     {key:'subtotal',label:'Subtotal',weight:1.1}
   ], rows);
   pdf.moveDown().font('Helvetica-Bold').fontSize(13).fillColor('#1946B8')
-    .text(`TOTAL OFFER: ${money(total)}`, {align:'right'});
+    .text(`TOTAL PENAWARAN: ${money(total)}`, {align:'right'});
   pdf.moveDown(2).font('Helvetica').fontSize(9).fillColor('#475569')
     .text('Dokumen dibuat otomatis oleh Integra Agency.');
   return total;

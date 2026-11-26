@@ -270,11 +270,37 @@ interface WebService {
         @Body body: CreateCategoryRequest
     ): MasterCategoryDto
 
+    @PATCH("api/master/categories/{id}")
+    suspend fun updateCategory(
+        @Header("Authorization") token: String,
+        @Path("id") id: Long,
+        @Body body: UpdateCategoryRequest
+    ): MasterCategoryDto
+
+    @retrofit2.http.DELETE("api/master/categories/{id}")
+    suspend fun deleteCategory(
+        @Header("Authorization") token: String,
+        @Path("id") id: Long
+    ): OkResponse
+
     @POST("api/master/items")
     suspend fun createMasterItem(
         @Header("Authorization") token: String,
         @Body body: CreateMasterItemRequest
     ): MasterItemDto
+
+    @PATCH("api/master/items/{id}")
+    suspend fun updateMasterItem(
+        @Header("Authorization") token: String,
+        @Path("id") id: Long,
+        @Body body: UpdateMasterItemRequest
+    ): MasterItemDto
+
+    @retrofit2.http.DELETE("api/master/items/{id}")
+    suspend fun deleteMasterItem(
+        @Header("Authorization") token: String,
+        @Path("id") id: Long
+    ): OkResponse
 
     @GET("api/approvals")
     suspend fun getAdminApprovals(

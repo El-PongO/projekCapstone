@@ -54,6 +54,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -556,6 +557,10 @@ fun IntegraModernAdminMasterItemScreen(
     categories: List<MasterCategoryDto>,
     onBack: () -> Unit,
     onAddClick: () -> Unit,
+    onEditItem: (MasterItemDto) -> Unit,
+    onDeleteItem: (MasterItemDto) -> Unit,
+    onEditCategory: (MasterCategoryDto) -> Unit,
+    onDeleteCategory: (MasterCategoryDto) -> Unit,
     onBottomNavigate: (AdminPage) -> Unit
 ) {
     val categoryMap = remember(categories) { categories.associateBy { it.id } }
@@ -604,6 +609,10 @@ fun IntegraModernAdminMasterItemScreen(
                                                 Text("Deal Valued At", fontSize = 12.sp, color = Color.Black)
                                                 Text(fmtMoney(item.basePrice), fontWeight = FontWeight.ExtraBold, fontSize = 24.sp, color = AdminModernGreen)
                                             }
+                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                                TextButton(onClick = { onEditItem(item) }) { Text("Edit") }
+                                                TextButton(onClick = { onDeleteItem(item) }) { Text("Delete") }
+                                            }
                                         }
                                     }
                                 }
@@ -619,8 +628,9 @@ fun IntegraModernAdminMasterItemScreen(
                                                 Text(category.categoryName, fontWeight = FontWeight.Bold, fontSize = 22.sp)
                                                 Text("Items: ${items.count { it.categoryId == category.id }}", fontSize = 12.sp, color = AdminModernTextMuted)
                                             }
-                                            Surface(shape = RoundedCornerShape(50), color = AdminModernBlue) {
-                                                Text("→", modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), color = Color.White, fontWeight = FontWeight.Bold)
+                                            Column(horizontalAlignment = Alignment.End) {
+                                                TextButton(onClick = { onEditCategory(category) }) { Text("Edit") }
+                                                TextButton(onClick = { onDeleteCategory(category) }) { Text("Delete") }
                                             }
                                         }
                                     }

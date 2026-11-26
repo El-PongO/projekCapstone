@@ -403,6 +403,18 @@ data class CreateMasterItemRequest(
     val description: String? = null
 )
 
+data class UpdateCategoryRequest(
+    val categoryName: String,
+    val description: String? = null
+)
+
+data class UpdateMasterItemRequest(
+    val categoryId: Long,
+    val itemName: String,
+    val basePrice: Double,
+    val description: String? = null
+)
+
 data class InvoiceDetailDto(
     val invoice: InvoiceDto = InvoiceDto(),
     val paidAmount: Double = 0.0

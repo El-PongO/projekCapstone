@@ -1,6 +1,8 @@
 package com.example.projectcapstone
 
 import android.content.Intent
+import android.content.ActivityNotFoundException
+import android.content.ClipData
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -514,7 +516,7 @@ fun GlobalDealsDetailsRoute(
 
     val context = LocalContext.current
     var generatingPdf by remember { mutableStateOf(false) }
-    var proposalSavedPath by remember { mutableStateOf<String?>(null) }
+    var proposalSavedFile by remember { mutableStateOf<SavedDownload?>(null) }
     var showWorkspace by remember { mutableStateOf(false) }
     var showDealWorkflow by remember { mutableStateOf(false) }
 
@@ -546,7 +548,7 @@ fun GlobalDealsDetailsRoute(
                 details = dealDetails
             ) { res ->
                 generatingPdf = false
-                res.onSuccess { savedPath -> proposalSavedPath = savedPath }
+                res.onSuccess { savedFile -> proposalSavedFile = savedFile }
                 res.onFailure { err ->
                     Toast.makeText(
                         context,
@@ -594,18 +596,47 @@ fun GlobalDealsDetailsRoute(
         IntegraProjectWorkspaceDialog(projectId = selection.projectId, token = session.token,
             onDismiss = { showWorkspace = false })
     }
-    proposalSavedPath?.let { path ->
+    proposalSavedFile?.let { savedFile ->
         AlertDialog(
-            onDismissRequest = { proposalSavedPath = null },
+            onDismissRequest = { proposalSavedFile = null },
             title = { Text("Proposal downloaded successfully", fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("The proposal PDF was saved to your device.")
-                    Text(path, fontSize = 12.sp, color = Color.DarkGray)
+                    Text(savedFile.path, fontSize = 12.sp, color = Color.DarkGray)
                 }
             },
             confirmButton = {
-                TextButton(onClick = { proposalSavedPath = null }) { Text("OK") }
+                Row {
+                    TextButton(onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(savedFile.uri, "application/pdf")
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            clipData = ClipData.newUri(context.contentResolver, "Proposal PDF", savedFile.uri)
+                        }
+                        try {
+                            context.startActivity(intent)
+                        } catch (_: ActivityNotFoundException) {
+                            Toast.makeText(context, "No PDF viewer is installed", Toast.LENGTH_LONG).show()
+                        }
+                    }) { Text("Preview") }
+                    TextButton(onClick = {
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "application/pdf"
+                            putExtra(Intent.EXTRA_STREAM, savedFile.uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            clipData = ClipData.newUri(context.contentResolver, "Proposal PDF", savedFile.uri)
+                        }
+                        try {
+                            context.startActivity(Intent.createChooser(intent, "Share proposal PDF"))
+                        } catch (_: ActivityNotFoundException) {
+                            Toast.makeText(context, "No app is available to share the proposal", Toast.LENGTH_LONG).show()
+                        }
+                    }) { Text("Share") }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { proposalSavedFile = null }) { Text("Close") }
             }
         )
     }

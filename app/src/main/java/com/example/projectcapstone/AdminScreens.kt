@@ -676,6 +676,10 @@ fun AdminMasterUserDetailsScreen(
     var showEditRateDialog by remember { mutableStateOf(false) }
     var rateInput by remember(agent.ratePercent) { mutableStateOf(agent.ratePercent.toString()) }
     var typeInput by remember(agent.agentType) { mutableStateOf(agent.agentType ?: "external") }
+    var nameInput by remember(agent.id) { mutableStateOf(agent.name) }
+    var emailInput by remember(agent.id) { mutableStateOf(agent.email) }
+    var phoneInput by remember(agent.id) { mutableStateOf(agent.phoneNumber.orEmpty()) }
+    var activeInput by remember(agent.id) { mutableStateOf(agent.isActive) }
 
     IntegraModernAdminUserDetailsScreen(
         userName = session?.user?.name ?: "Admin",
@@ -688,9 +692,30 @@ fun AdminMasterUserDetailsScreen(
     if (showEditRateDialog) {
         AlertDialog(
             onDismissRequest = { showEditRateDialog = false },
-            title = { Text("Update Agent Rate - ${agent.name}", fontWeight = FontWeight.Bold, fontSize = 15.sp) },
+            title = { Text("Update Agent - ${agent.name}", fontWeight = FontWeight.Bold, fontSize = 15.sp) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = nameInput,
+                        onValueChange = { nameInput = it },
+                        label = { Text("Full Name") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = emailInput,
+                        onValueChange = { emailInput = it },
+                        label = { Text("Email") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = phoneInput,
+                        onValueChange = { phoneInput = it },
+                        label = { Text("Phone Number") },
+                        singleLine = true
+                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(
                             selected = typeInput == "external",
@@ -713,32 +738,50 @@ fun AdminMasterUserDetailsScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
                     )
+                    FilterChip(
+                        selected = activeInput,
+                        onClick = { activeInput = !activeInput },
+                        label = { Text(if (activeInput) "Active" else "Deactivated") }
+                    )
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        val newRate = rateInput.toDoubleOrNull() ?: agent.ratePercent
+                        val newRate = rateInput.toDoubleOrNull()
+                        if (nameInput.isBlank() || emailInput.isBlank() || newRate == null || newRate < 0) {
+                            Toast.makeText(context, "Enter a valid name, email, and commission rate", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
                         if (session != null && agent.id > 0) {
                             ApiService.adminUpdateAgent(
                                 token = session.token,
                                 agentId = agent.id,
+                                name = nameInput,
+                                email = emailInput,
+                                phoneNumber = phoneInput,
                                 ratePercent = newRate,
-                                agentType = typeInput
+                                agentType = typeInput,
+                                isActive = activeInput
                             ) { res ->
                                 res.onSuccess { updated ->
                                     onAgentUpdated(updated)
                                     showEditRateDialog = false
-                                    Toast.makeText(context, "Commission rate updated to ${updated.ratePercent}%", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Agent details updated", Toast.LENGTH_SHORT).show()
                                 }
-                                res.onFailure {
-                                    onAgentUpdated(agent.copy(ratePercent = newRate, agentType = typeInput))
-                                    showEditRateDialog = false
-                                    Toast.makeText(context, "Commission rate updated!", Toast.LENGTH_SHORT).show()
+                                res.onFailure { error ->
+                                    Toast.makeText(context, error.message ?: "Agent update failed", Toast.LENGTH_LONG).show()
                                 }
                             }
                         } else {
-                            onAgentUpdated(agent.copy(ratePercent = newRate, agentType = typeInput))
+                            onAgentUpdated(agent.copy(
+                                name = nameInput,
+                                email = emailInput,
+                                phoneNumber = phoneInput,
+                                ratePercent = newRate,
+                                agentType = typeInput,
+                                isActive = activeInput
+                            ))
                             showEditRateDialog = false
                         }
                     }
@@ -772,6 +815,10 @@ private fun AdminMasterItemRoute(
     var refreshCount by remember { mutableIntStateOf(0) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var editingItem by remember { mutableStateOf<MasterItemDto?>(null) }
+    var editingCategory by remember { mutableStateOf<MasterCategoryDto?>(null) }
+    var deletingItem by remember { mutableStateOf<MasterItemDto?>(null) }
+    var deletingCategory by remember { mutableStateOf<MasterCategoryDto?>(null) }
 
     LaunchedEffect(session.token, refreshCount) {
         ApiService.adminMasterItems(session.token) { result ->
@@ -793,6 +840,10 @@ private fun AdminMasterItemRoute(
         categories = categories,
         onBack = onBack,
         onAddClick = { showCreateDialog = true },
+        onEditItem = { editingItem = it },
+        onDeleteItem = { deletingItem = it },
+        onEditCategory = { editingCategory = it },
+        onDeleteCategory = { deletingCategory = it },
         onBottomNavigate = onBottomNavigate
     )
 
@@ -883,6 +934,157 @@ private fun AdminMasterItemRoute(
             }
         )
     }
+
+    editingCategory?.let { category ->
+        var name by remember(category.id) { mutableStateOf(category.categoryName) }
+        var description by remember(category.id) { mutableStateOf(category.description.orEmpty()) }
+        AlertDialog(
+            onDismissRequest = { editingCategory = null },
+            title = { Text("Edit Category", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(name, { name = it }, label = { Text("Category Name") }, singleLine = true)
+                    OutlinedTextField(description, { description = it }, label = { Text("Description") })
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    if (name.isBlank()) return@Button
+                    ApiService.adminUpdateCategory(session.token, category.id, name, description) { result ->
+                        result.onSuccess {
+                            editingCategory = null
+                            refreshCount++
+                            Toast.makeText(context, "Category updated", Toast.LENGTH_SHORT).show()
+                        }
+                        result.onFailure { error ->
+                            Toast.makeText(context, error.message ?: "Category update failed", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingCategory = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    editingItem?.let { item ->
+        var name by remember(item.id) { mutableStateOf(item.itemName) }
+        var price by remember(item.id) { mutableStateOf(item.basePrice.toString()) }
+        var description by remember(item.id) { mutableStateOf(item.description.orEmpty()) }
+        var categoryId by remember(item.id) { mutableLongStateOf(item.categoryId) }
+        var categoryMenuExpanded by remember { mutableStateOf(false) }
+        AlertDialog(
+            onDismissRequest = { editingItem = null },
+            title = { Text("Edit Master Item", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(name, { name = it }, label = { Text("Item Name") }, singleLine = true)
+                    Box {
+                        TextButton(onClick = { categoryMenuExpanded = true }) {
+                            Text(categories.firstOrNull { it.id == categoryId }?.categoryName ?: "Choose category")
+                        }
+                        DropdownMenu(
+                            expanded = categoryMenuExpanded,
+                            onDismissRequest = { categoryMenuExpanded = false }
+                        ) {
+                            categories.forEach { category ->
+                                DropdownMenuItem(
+                                    text = { Text(category.categoryName) },
+                                    onClick = {
+                                        categoryId = category.id
+                                        categoryMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = price,
+                        onValueChange = { price = it },
+                        label = { Text("Base Price") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true
+                    )
+                    OutlinedTextField(description, { description = it }, label = { Text("Description") })
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val basePrice = price.toDoubleOrNull()
+                    if (name.isBlank() || categoryId <= 0 || basePrice == null || basePrice < 0) {
+                        Toast.makeText(context, "Enter a valid name, category, and price", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    ApiService.adminUpdateItem(
+                        session.token, item.id, categoryId, name, basePrice, description
+                    ) { result ->
+                        result.onSuccess {
+                            editingItem = null
+                            refreshCount++
+                            Toast.makeText(context, "Master item updated", Toast.LENGTH_SHORT).show()
+                        }
+                        result.onFailure { error ->
+                            Toast.makeText(context, error.message ?: "Item update failed", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingItem = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    deletingItem?.let { item ->
+        AlertDialog(
+            onDismissRequest = { deletingItem = null },
+            title = { Text("Delete Master Item?") },
+            text = { Text("Delete ${item.itemName}? Items referenced by project history may not be removable.") },
+            confirmButton = {
+                Button(onClick = {
+                    ApiService.adminDeleteItem(session.token, item.id) { result ->
+                        result.onSuccess {
+                            deletingItem = null
+                            refreshCount++
+                            Toast.makeText(context, "Master item deleted", Toast.LENGTH_SHORT).show()
+                        }
+                        result.onFailure { error ->
+                            Toast.makeText(context, error.message ?: "Item deletion failed", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { deletingItem = null }) { Text("Cancel") }
+            }
+        )
+    }
+
+    deletingCategory?.let { category ->
+        AlertDialog(
+            onDismissRequest = { deletingCategory = null },
+            title = { Text("Delete Category?") },
+            text = { Text("Delete ${category.categoryName}? Categories with items may not be removable.") },
+            confirmButton = {
+                Button(onClick = {
+                    ApiService.adminDeleteCategory(session.token, category.id) { result ->
+                        result.onSuccess {
+                            deletingCategory = null
+                            refreshCount++
+                            Toast.makeText(context, "Category deleted", Toast.LENGTH_SHORT).show()
+                        }
+                        result.onFailure { error ->
+                            Toast.makeText(context, error.message ?: "Category deletion failed", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { deletingCategory = null }) { Text("Cancel") }
+            }
+        )
+    }
 }
 
 @Composable
@@ -894,6 +1096,10 @@ fun AdminMasterItemScreenContent(
     categories: List<MasterCategoryDto> = emptyList(),
     onBack: () -> Unit = {},
     onAddClick: () -> Unit = {},
+    onEditItem: (MasterItemDto) -> Unit = {},
+    onDeleteItem: (MasterItemDto) -> Unit = {},
+    onEditCategory: (MasterCategoryDto) -> Unit = {},
+    onDeleteCategory: (MasterCategoryDto) -> Unit = {},
     onBottomNavigate: (AdminPage) -> Unit = {}
 ) {
     IntegraModernAdminMasterItemScreen(
@@ -904,6 +1110,10 @@ fun AdminMasterItemScreenContent(
         categories = categories,
         onBack = onBack,
         onAddClick = onAddClick,
+        onEditItem = onEditItem,
+        onDeleteItem = onDeleteItem,
+        onEditCategory = onEditCategory,
+        onDeleteCategory = onDeleteCategory,
         onBottomNavigate = onBottomNavigate
     )
 }

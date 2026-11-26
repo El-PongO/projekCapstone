@@ -557,28 +557,6 @@ private fun DownlinePerformanceRoute(
                     )
                 }
 
-                // Also show non-cancelled sales if income records have not been generated yet
-                val validSales = perf.sales.filter {
-                    !it.status.equals("no_deal", ignoreCase = true) &&
-                            !it.status.equals("cancelled", ignoreCase = true)
-                }
-                if (rows.isEmpty() && validSales.isNotEmpty()) {
-                    validSales.forEach { sale ->
-                        val estCut = sale.value * 0.05
-                        rows.add(
-                            DownlineSalesReportItemUi(
-                                clientName = sale.client,
-                                dealCutPercent = "5%",
-                                dateFormatted = formatDateDmy(sale.date, " - "),
-                                amountFormatted = formatCurrency(if (estCut > 0) estCut else sale.value)
-                            )
-                        )
-                    }
-                    if (totalProfits == 0.0) {
-                        totalProfits = validSales.sumOf { it.value * 0.05 }
-                    }
-                }
-
                 salesReportItems = rows
             }
             result.onFailure { err ->

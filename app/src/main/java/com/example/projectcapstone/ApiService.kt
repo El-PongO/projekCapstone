@@ -2,6 +2,7 @@ package com.example.projectcapstone
 
 import android.content.ContentValues
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -13,10 +14,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.core.content.FileProvider
 import org.json.JSONObject
 import retrofit2.HttpException
 
 class ApiError(message: String, val unauthorized: Boolean = false) : IOException(message)
+
+data class SavedDownload(val path: String, val uri: Uri)
 
 object ApiService {
     // Di sini hanya pemanggilan WebService; tidak membuat HttpURLConnection manual.
@@ -985,6 +989,9 @@ object ApiService {
     fun adminUpdateAgent(
         token: String,
         agentId: Long,
+        name: String? = null,
+        email: String? = null,
+        phoneNumber: String? = null,
         ratePercent: Double? = null,
         agentType: String? = null,
         isActive: Boolean? = null,
@@ -997,6 +1004,9 @@ object ApiService {
                         "Bearer $token",
                         agentId,
                         UpdateAgentRequest(
+                            name = name?.trim(),
+                            email = email?.trim(),
+                            phoneNumber = phoneNumber?.trim()?.ifBlank { null },
                             ratePercent = ratePercent,
                             agentType = agentType,
                             isActive = isActive
@@ -1053,6 +1063,48 @@ object ApiService {
         }
     }
 
+    fun adminUpdateCategory(
+        token: String,
+        categoryId: Long,
+        name: String,
+        description: String,
+        done: (Result<MasterCategoryDto>) -> Unit
+    ) {
+        scope.launch {
+            val result = try {
+                Result.success(
+                    App.retrofitService.updateCategory(
+                        "******",
+                        categoryId,
+                        UpdateCategoryRequest(
+                            categoryName = name.trim(),
+                            description = description.trim().ifBlank { null }
+                        )
+                    )
+                )
+            } catch (error: Exception) {
+                Result.failure(errorMessage(error))
+            }
+            withContext(Dispatchers.Main) { done(result) }
+        }
+    }
+
+    fun adminDeleteCategory(
+        token: String,
+        categoryId: Long,
+        done: (Result<Boolean>) -> Unit
+    ) {
+        scope.launch {
+            val result = try {
+                App.retrofitService.deleteCategory("******", categoryId)
+                Result.success(true)
+            } catch (error: Exception) {
+                Result.failure(errorMessage(error))
+            }
+            withContext(Dispatchers.Main) { done(result) }
+        }
+    }
+
     fun adminCreateItem(
         token: String,
         categoryId: Long,
@@ -1076,6 +1128,52 @@ object ApiService {
                         )
                     )
                 )
+            } catch (error: Exception) {
+                Result.failure(errorMessage(error))
+            }
+            withContext(Dispatchers.Main) { done(result) }
+        }
+    }
+
+    fun adminUpdateItem(
+        token: String,
+        itemId: Long,
+        categoryId: Long,
+        itemName: String,
+        basePrice: Double,
+        description: String,
+        done: (Result<MasterItemDto>) -> Unit
+    ) {
+        scope.launch {
+            val result = try {
+                Result.success(
+                    App.retrofitService.updateMasterItem(
+                        "******",
+                        itemId,
+                        UpdateMasterItemRequest(
+                            categoryId = categoryId,
+                            itemName = itemName.trim(),
+                            basePrice = basePrice,
+                            description = description.trim().ifBlank { null }
+                        )
+                    )
+                )
+            } catch (error: Exception) {
+                Result.failure(errorMessage(error))
+            }
+            withContext(Dispatchers.Main) { done(result) }
+        }
+    }
+
+    fun adminDeleteItem(
+        token: String,
+        itemId: Long,
+        done: (Result<Boolean>) -> Unit
+    ) {
+        scope.launch {
+            val result = try {
+                App.retrofitService.deleteMasterItem("******", itemId)
+                Result.success(true)
             } catch (error: Exception) {
                 Result.failure(errorMessage(error))
             }
@@ -1289,7 +1387,7 @@ object ApiService {
         fileName: String,
         mimeType: String,
         bytes: ByteArray
-    ): String {
+    ): SavedDownload {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val resolver = context.contentResolver
             val values = ContentValues().apply {
@@ -1310,13 +1408,19 @@ object ApiService {
                 resolver.delete(uri, null, null)
                 throw error
             }
-            return "Downloads/$fileName"
+            return SavedDownload("Downloads/$fileName", uri)
         } else {
-            val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir
+            val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                ?: File(context.filesDir, Environment.DIRECTORY_DOWNLOADS)
             if (!dir.exists()) dir.mkdirs()
             val file = File(dir, fileName)
             file.writeBytes(bytes)
-            return file.absolutePath
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+            return SavedDownload(file.absolutePath, uri)
         }
     }
 
@@ -1328,7 +1432,7 @@ object ApiService {
         productName: String,
         price: Double,
         details: String,
-        done: (Result<String>) -> Unit
+        done: (Result<SavedDownload>) -> Unit
     ) {
         scope.launch {
             val result = try {
@@ -1444,8 +1548,8 @@ object ApiService {
                 val body = App.retrofitService.downloadReportFile("Bearer $token", reportType, fmt, from, to)
                 val bytes = body.bytes()
                 val fileName = "Integra_${reportType}_${System.currentTimeMillis().toString().takeLast(5)}.$ext"
-                val savedPath = saveBytesToDownloads(context, fileName, mime, bytes)
-                Result.success(savedPath)
+                val savedFile = saveBytesToDownloads(context, fileName, mime, bytes)
+                Result.success(savedFile.path)
             } catch (error: Exception) {
                 Result.failure(errorMessage(error))
             }
