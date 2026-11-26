@@ -729,12 +729,12 @@ fun AdminMasterUserDetailsScreen(
                                 res.onSuccess { updated ->
                                     onAgentUpdated(updated)
                                     showEditRateDialog = false
-                                    Toast.makeText(context, "Rate updated to ${updated.ratePercent}%", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Commission rate updated to ${updated.ratePercent}%", Toast.LENGTH_SHORT).show()
                                 }
                                 res.onFailure {
                                     onAgentUpdated(agent.copy(ratePercent = newRate, agentType = typeInput))
                                     showEditRateDialog = false
-                                    Toast.makeText(context, "Rate updated!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Commission rate updated!", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         } else {
@@ -954,22 +954,22 @@ private fun AdminDealsReportsRoute(
     pendingPayout?.let { comm ->
         AlertDialog(
             onDismissRequest = { pendingPayout = null },
-            title = { Text("Konfirmasi transfer komisi") },
-            text = { Text("Pastikan dana sudah ditransfer ke agen. Tindakan ini mencatat sisa komisi sebagai Paid, tetapi tidak melakukan transfer bank otomatis.") },
+            title = { Text("Confirm commission payout") },
+            text = { Text("Confirm that the funds have been transferred to the agent. This records the remaining commission as paid but does not initiate a bank transfer.") },
             confirmButton = {
                 Button(onClick = {
                     pendingPayout = null
                     ApiService.adminPayRemainingCommission(session.token, comm.id) { result ->
                         result.onSuccess {
-                            Toast.makeText(context, "Pencairan komisi tercatat", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Commission payout recorded", Toast.LENGTH_SHORT).show()
                             refreshCount++
                         }.onFailure { err ->
-                            Toast.makeText(context, err.message ?: "Pencairan gagal", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, err.message ?: "Payout failed", Toast.LENGTH_LONG).show()
                         }
                     }
-                }) { Text("Sudah Transfer") }
+                }) { Text("Transferred") }
             },
-            dismissButton = { TextButton(onClick = { pendingPayout = null }) { Text("Batal") } }
+            dismissButton = { TextButton(onClick = { pendingPayout = null }) { Text("Cancel") } }
         )
     }
 
@@ -992,7 +992,7 @@ private fun AdminDealsReportsRoute(
 
             AdminV3PageHero(
                 title = "Pending approvals",
-                subtitle = "Review permintaan Deal dan komisi agent",
+                subtitle = "Review deal requests and agent commissions",
                 icon = Icons.Default.CheckCircle
             )
 
@@ -1149,10 +1149,10 @@ private fun AdminDealsReportsRoute(
                                                 initialPrice = proj.dealValue,
                                                 agentResponsible = proj.agentCode ?: "-"
                                             ))
-                                        }) { Text("Detail", fontSize = 11.sp) }
+                                        }) { Text("Details", fontSize = 11.sp) }
                                         if (pendingApp != null) {
                                             TextButton(onClick = { selectedRateApproval = pendingApp }) {
-                                                Text("Sepakati Rate", fontSize = 11.sp)
+                                                Text("Agree on rate", fontSize = 11.sp)
                                             }
                                         }
                                     }
@@ -1165,10 +1165,10 @@ private fun AdminDealsReportsRoute(
                                                 onClick = {
                                                     ApiService.adminReviewApproval(session.token, pendingApp.id, "approved") { result ->
                                                         result.onSuccess {
-                                                            Toast.makeText(context, "Deal disetujui", Toast.LENGTH_SHORT).show()
+                                                            Toast.makeText(context, "Deal approved", Toast.LENGTH_SHORT).show()
                                                             refreshCount++
                                                         }.onFailure { error ->
-                                                            Toast.makeText(context, error.message ?: "Rate belum disepakati", Toast.LENGTH_LONG).show()
+                                                            Toast.makeText(context, error.message ?: "Commission rate not agreed", Toast.LENGTH_LONG).show()
                                                         }
                                                     }
                                                 },
@@ -1177,17 +1177,17 @@ private fun AdminDealsReportsRoute(
                                             ) { Text("Approve Deal", fontSize = 11.sp) }
                                             OutlinedButton(
                                                 onClick = {
-                                                    ApiService.adminReviewApproval(session.token, pendingApp.id, "rejected", "Ditolak Admin") { result ->
+                                                    ApiService.adminReviewApproval(session.token, pendingApp.id, "rejected", "Rejected by Admin") { result ->
                                                         result.onSuccess {
-                                                            Toast.makeText(context, "Permintaan Deal ditolak", Toast.LENGTH_SHORT).show()
+                                                            Toast.makeText(context, "Deal request rejected", Toast.LENGTH_SHORT).show()
                                                             refreshCount++
                                                         }.onFailure { error ->
-                                                            Toast.makeText(context, error.message ?: "Gagal menolak", Toast.LENGTH_LONG).show()
+                                                            Toast.makeText(context, error.message ?: "Failed to reject", Toast.LENGTH_LONG).show()
                                                         }
                                                     }
                                                 },
                                                 modifier = Modifier.weight(1f)
-                                            ) { Text("Tolak", fontSize = 11.sp) }
+                                            ) { Text("Reject", fontSize = 11.sp) }
                                         }
                                     }
                                 }
@@ -1249,10 +1249,10 @@ private fun AdminDealsReportsRoute(
                                                     .clickable {
                                                         ApiService.adminApproveCommission(session.token, comm.id) { result ->
                                                             result.onSuccess {
-                                                                Toast.makeText(context, "Komisi disetujui", Toast.LENGTH_SHORT).show()
+                                                                Toast.makeText(context, "Commission approved", Toast.LENGTH_SHORT).show()
                                                                 refreshCount++
                                                             }.onFailure { error ->
-                                                                Toast.makeText(context, error.message ?: "Komisi belum dapat disetujui", Toast.LENGTH_LONG).show()
+                                                                Toast.makeText(context, error.message ?: "Commission cannot be approved yet", Toast.LENGTH_LONG).show()
                                                             }
                                                         }
                                                     }
@@ -1340,7 +1340,7 @@ private fun AdminMasterProjectRoute(
 
             AdminV3PageHero(
                 title = "Project pipeline",
-                subtitle = "Pantau project aktif, deal, dan riwayat",
+                subtitle = "Track active projects, deals, and history",
                 icon = Icons.Default.Folder
             )
 
@@ -1413,7 +1413,7 @@ private fun AdminMasterProjectRoute(
 
                 val listToRender = currentList
 
-                if (listToRender.isEmpty()) AdminV3EmptyState("Belum ada project pada kategori ini.")
+                if (listToRender.isEmpty()) AdminV3EmptyState("No projects in this category yet.")
 
                 listToRender.forEachIndexed { idx, p ->
                     val days = adminDaysSince(p.createdAt)
@@ -1570,22 +1570,22 @@ private fun AdminMasterPaymentsRoute(
     pendingInvoicePayment?.let { inv ->
         AlertDialog(
             onDismissRequest = { pendingInvoicePayment = null },
-            title = { Text("Konfirmasi penerimaan pembayaran") },
-            text = { Text("Pastikan pembayaran klien benar-benar sudah diterima. Aksi ini mencatat sisa tagihan invoice sebagai lunas.") },
+            title = { Text("Confirm payment receipt") },
+            text = { Text("Confirm that the client payment has been received. This marks the remaining invoice balance as paid.") },
             confirmButton = {
                 Button(onClick = {
                     pendingInvoicePayment = null
                     ApiService.adminMarkInvoiceFullyPaid(session.token, inv.id) { result ->
                         result.onSuccess {
-                            Toast.makeText(context, "Invoice tercatat lunas", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Invoice marked as paid", Toast.LENGTH_SHORT).show()
                             refreshCount++
                         }.onFailure { err ->
-                            Toast.makeText(context, err.message ?: "Gagal mencatat pembayaran", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, err.message ?: "Failed to record payment", Toast.LENGTH_LONG).show()
                         }
                     }
-                }) { Text("Sudah Diterima") }
+                }) { Text("Received") }
             },
-            dismissButton = { TextButton(onClick = { pendingInvoicePayment = null }) { Text("Batal") } }
+            dismissButton = { TextButton(onClick = { pendingInvoicePayment = null }) { Text("Cancel") } }
         )
     }
 
@@ -1640,7 +1640,7 @@ private fun AdminMasterPaymentsRoute(
 
             AdminV3PageHero(
                 title = "Payment management",
-                subtitle = "Kelola invoice dan status pembayaran",
+                subtitle = "Manage invoices and payment status",
                 icon = Icons.Default.AttachMoney
             )
 
@@ -1713,7 +1713,7 @@ private fun AdminMasterPaymentsRoute(
 
                 val listToRender = currentList
 
-                if (listToRender.isEmpty()) AdminV3EmptyState("Belum ada invoice pada kategori ini.")
+                if (listToRender.isEmpty()) AdminV3EmptyState("No invoices in this category yet.")
 
                 listToRender.forEachIndexed { idx, inv ->
                     val proj = projectMap[inv.projectId]
@@ -1944,7 +1944,7 @@ private fun AdminBroadcastRoute(
 
             AdminV3PageHero(
                 title = "Team announcements",
-                subtitle = "Kirim informasi ke seluruh agent",
+                subtitle = "Send a message to all agents",
                 icon = Icons.Default.Campaign
             )
 
@@ -1977,14 +1977,14 @@ private fun AdminBroadcastRoute(
                     onValueChange = { message = it },
                     modifier = Modifier.fillMaxWidth().height(150.dp),
                     label = { Text("Announcements") },
-                    placeholder = { Text("Tulis pesan untuk semua agent...") },
+                    placeholder = { Text("Write a message for all agents...") },
                     shape = RoundedCornerShape(16.dp)
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
-                Text("Penerima Broadcast", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text("Broadcast recipients", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("all" to "Semua", "upline" to "Upline", "downline" to "Downline").forEach { (key, label) ->
+                    listOf("all" to "All", "upline" to "Upline", "downline" to "Downline").forEach { (key, label) ->
                         FilterChip(selected = audience == key, onClick = { audience = key }, label = { Text(label, fontSize = 11.sp) })
                     }
                 }
@@ -2037,7 +2037,7 @@ private fun AdminBroadcastRoute(
 
                 val listToRender = notifications.take(5)
 
-                if (listToRender.isEmpty()) AdminV3EmptyState("Belum ada broadcast sebelumnya.")
+                if (listToRender.isEmpty()) AdminV3EmptyState("There are no previous broadcasts.")
 
                 listToRender.forEachIndexed { idx, n ->
                     AdminV3AccentCard(
@@ -2148,33 +2148,77 @@ private fun AdminExportReportsRoute(
     var exporting by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
 
+    fun englishReportLabel(label: String) = when (label) {
+        "Agen" -> "Agent"
+        "Peran" -> "Role"
+        "Total Proyek" -> "Total Projects"
+        "Konversi (%)" -> "Conversion (%)"
+        "Nilai Deal" -> "Deal Value"
+        "Proyek" -> "Project"
+        "Tanggal Deal" -> "Deal Date"
+        "Penerima" -> "Recipient"
+        "Jenis Agen" -> "Agent Type"
+        "Nilai Bagi Hasil" -> "Revenue Share"
+        "Status Pembayaran Komisi" -> "Commission Payment Status"
+        "Batal" -> "Cancelled"
+        "Klien" -> "Client"
+        "Bukti Pembayaran" -> "Payment Receipt"
+        "Jumlah Dibayar" -> "Amount Paid"
+        "Tanggal Pembayaran" -> "Payment Date"
+        "Metode Pembayaran" -> "Payment Method"
+        "Jatuh Tempo" -> "Due Date"
+        "Total Tagihan" -> "Total Invoiced"
+        "Sudah Dibayar" -> "Paid"
+        "Sisa Tagihan" -> "Outstanding Balance"
+        "Hari Terlambat" -> "Days Overdue"
+        "Umur Pembayaran" -> "Payment Aging"
+        "Alasan" -> "Reason"
+        "Terakhir Diperbarui" -> "Last Updated"
+        "Tanggal Bergabung" -> "Join Date"
+        "Nilai Deal Downline" -> "Downline Deal Value"
+        "Komisi Downline" -> "Downline Commission"
+        "Kategori" -> "Category"
+        "Jumlah Proyek" -> "Project Count"
+        "Jumlah Deal" -> "Deal Count"
+        "Nilai Item Deal" -> "Deal Item Value"
+        "Tahap" -> "Stage"
+        "Potensi Pendapatan" -> "Potential Revenue"
+        "Konversi Historis (%)" -> "Historical Conversion (%)"
+        "Estimasi Pendapatan" -> "Estimated Revenue"
+        "Catatan" -> "Notes"
+        "Proyek Aktif" -> "Active Projects"
+        "Jumlah Pembayaran" -> "Payment Count"
+        "Jumlah Invoice" -> "Invoice Count"
+        else -> label
+    }
+
     val primaryReports = listOf(
-        "Ringkasan Deal & Nilai Proyek" to "deal-summary",
-        "Konversi Proyek" to "project-conversion",
-        "Komisi & Bagi Hasil" to "commission-sharing",
-        "Piutang & Umur Pembayaran" to "aging-payment",
-        "Performa & Kinerja Agen" to "agent-performance"
+        "Deal Summary & Project Value" to "deal-summary",
+        "Project Conversion" to "project-conversion",
+        "Commission Sharing" to "commission-sharing",
+        "Receivables & Payment Aging" to "aging-payment",
+        "Agent Performance" to "agent-performance"
     )
 
     val additionalBookReports = listOf(
-        "Pembayaran & Riwayat Transaksi" to "payment-history",
-        "Evaluasi Proyek Batal" to "cancel-analysis",
-        "Produktivitas Hierarki Agen" to "agent-hierarchy",
-        "Portofolio Kategori Proyek" to "project-category",
-        "Proyeksi Potensi Pendapatan" to "revenue-forecast"
+        "Payments & Transaction History" to "payment-history",
+        "Cancelled Project Analysis" to "cancel-analysis",
+        "Agent Hierarchy Productivity" to "agent-hierarchy",
+        "Project Category Portfolio" to "project-category",
+        "Potential Revenue Forecast" to "revenue-forecast"
     )
 
     fun validPeriod(): Boolean {
         val from = runCatching { if (reportFrom.isBlank()) null else java.time.LocalDate.parse(reportFrom.trim()) }.getOrElse {
-            Toast.makeText(context, "Tanggal Mulai harus YYYY-MM-DD", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Start date must use YYYY-MM-DD format", Toast.LENGTH_SHORT).show()
             return false
         }
         val to = runCatching { if (reportTo.isBlank()) null else java.time.LocalDate.parse(reportTo.trim()) }.getOrElse {
-            Toast.makeText(context, "Tanggal Selesai harus YYYY-MM-DD", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "End date must use YYYY-MM-DD format", Toast.LENGTH_SHORT).show()
             return false
         }
         if (from != null && to != null && from.isAfter(to)) {
-            Toast.makeText(context, "Tanggal Mulai harus sebelum Tanggal Selesai", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Start date must be before the end date", Toast.LENGTH_SHORT).show()
             return false
         }
         return true
@@ -2199,7 +2243,7 @@ private fun AdminExportReportsRoute(
                 result.onFailure { err ->
                     exporting = false
                     if (err is ApiError && err.unauthorized) onExpired()
-                    else Toast.makeText(context, "Gagal mengunduh ${types[index]} (${index} berhasil): ${err.message}", Toast.LENGTH_LONG).show()
+                    else Toast.makeText(context, "Failed to download ${types[index]} (${index} completed): ${err.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -2225,12 +2269,12 @@ private fun AdminExportReportsRoute(
                     dto.data.firstOrNull()?.keys?.map { key ->
                         ReportColumnDto(key, key.replace('_', ' ').replaceFirstChar { it.uppercase() })
                     } ?: emptyList()
-                }
+                }.map { it.copy(label = englishReportLabel(it.label)) }
                 reportSummary = dto.summary
             }
             res.onFailure { err ->
                 if (err is ApiError && err.unauthorized) onExpired()
-                else Toast.makeText(context, err.message ?: "Gagal memuat laporan", Toast.LENGTH_LONG).show()
+                else Toast.makeText(context, err.message ?: "Failed to load reports", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -2251,7 +2295,7 @@ private fun AdminExportReportsRoute(
 
             AdminV3PageHero(
                 title = "Business reports",
-                subtitle = "Unduh laporan dan pantau performa",
+                subtitle = "Download reports and track performance",
                 icon = Icons.Default.Download
             )
 
@@ -2274,7 +2318,7 @@ private fun AdminExportReportsRoute(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Pilih laporan",
+                        text = "Select reports",
                         color = Color.Black,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
@@ -2299,16 +2343,16 @@ private fun AdminExportReportsRoute(
                     }
                 }
 
-                Text("Filter Periode (opsional)", fontWeight = FontWeight.SemiBold, color = AdminPrimaryBlue)
+                Text("Date range (optional)", fontWeight = FontWeight.SemiBold, color = AdminPrimaryBlue)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = reportFrom, onValueChange = { reportFrom = it },
-                        label = { Text("Mulai") }, placeholder = { Text("YYYY-MM-DD") },
+                        label = { Text("From") }, placeholder = { Text("YYYY-MM-DD") },
                         singleLine = true, modifier = Modifier.weight(1f)
                     )
                     OutlinedTextField(
                         value = reportTo, onValueChange = { reportTo = it },
-                        label = { Text("Selesai") }, placeholder = { Text("YYYY-MM-DD") },
+                        label = { Text("To") }, placeholder = { Text("YYYY-MM-DD") },
                         singleLine = true, modifier = Modifier.weight(1f)
                     )
                 }
@@ -2355,7 +2399,7 @@ private fun AdminExportReportsRoute(
 
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Laporan lainnya",
+                    text = "More reports",
                     color = Color.Black,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
@@ -2400,7 +2444,7 @@ private fun AdminExportReportsRoute(
                         }
                     }
                 }
-                Text("Ketuk nama laporan untuk pratinjau, atau centang untuk ekspor.", fontSize = 11.sp)
+                Text("Tap a report name to preview it, or select it to export.", fontSize = 11.sp)
                 Button(
                     onClick = {
                         if (validPeriod()) downloadReports(
@@ -2411,7 +2455,7 @@ private fun AdminExportReportsRoute(
                     enabled = selectedReports.isNotEmpty() && !exporting,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(if (exporting) "Mengunduh..." else "Ekspor ${selectedReports.size} laporan ($selectedFormat)")
+                    Text(if (exporting) "Downloading..." else "Export ${selectedReports.size} reports ($selectedFormat)")
                 }
             }
         }
@@ -2430,7 +2474,7 @@ private fun AdminExportReportsRoute(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (reportSummary.isNotEmpty()) {
-                        Text("Ringkasan", fontWeight = FontWeight.Bold, color = AdminDarkBlue, fontSize = 13.sp)
+                        Text("Summary", fontWeight = FontWeight.Bold, color = AdminDarkBlue, fontSize = 13.sp)
                         reportSummary.forEach { (key, value) ->
                             val label = reportColumns.firstOrNull { it.key == key }?.label
                                 ?: key.replace('_', ' ').replaceFirstChar { it.uppercase() }
@@ -2469,8 +2513,8 @@ private fun AdminExportReportsRoute(
                     }
 
                     if (reportColumns.isNotEmpty()) {
-                        Text("Rincian laporan", fontWeight = FontWeight.Bold, color = AdminDarkBlue, fontSize = 13.sp)
-                        Text("Geser ke samping untuk melihat semua kolom", fontSize = 10.sp, color = Color.DarkGray)
+                        Text("Report details", fontWeight = FontWeight.Bold, color = AdminDarkBlue, fontSize = 13.sp)
+                        Text("Swipe horizontally to view all columns", fontSize = 10.sp, color = Color.DarkGray)
                         Column(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                             Row(modifier = Modifier.height(IntrinsicSize.Min)) {
                                 reportColumns.forEach { column ->
@@ -2500,7 +2544,7 @@ private fun AdminExportReportsRoute(
                             }
                         }
                     }
-                    if (reportRows.isEmpty()) Text("Belum ada data untuk periode ini.", fontSize = 12.sp, color = Color.DarkGray)
+                    if (reportRows.isEmpty()) Text("No data for this period.", fontSize = 12.sp, color = Color.DarkGray)
                 }
             },
             confirmButton = {
@@ -2515,13 +2559,13 @@ private fun AdminExportReportsRoute(
         AlertDialog(
             onDismissRequest = { exportedFiles = null },
             icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = AdminGreen) },
-            title = { Text("Ekspor berhasil", fontWeight = FontWeight.Bold) },
+            title = { Text("Export completed successfully", fontWeight = FontWeight.Bold) },
             text = {
                 Column(
                     modifier = Modifier.heightIn(max = 240.dp).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("${paths.size} laporan berhasil disimpan di perangkat Anda.")
+                    Text("${paths.size} reports saved to your device.")
                     paths.forEach { path ->
                         Text(path, fontSize = 12.sp, color = Color.DarkGray)
                     }

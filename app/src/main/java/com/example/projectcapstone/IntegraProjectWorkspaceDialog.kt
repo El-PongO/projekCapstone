@@ -41,7 +41,7 @@ fun IntegraProjectWorkspaceDialog(projectId: Long, token: String, onDismiss: () 
         try {
             data = App.retrofitService.getProjectWorkspace("Bearer $token", projectId)
             error = null
-        } catch (e: Exception) { error = e.message ?: "Gagal memuat Workspace" }
+        } catch (e: Exception) { error = e.message ?: "Failed to load workspace" }
         finally { busy = false }
     }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -51,7 +51,7 @@ fun IntegraProjectWorkspaceDialog(projectId: Long, token: String, onDismiss: () 
                 val mime = context.contentResolver.getType(uri) ?: "application/octet-stream"
                 val ext = when (mime) {
                     "application/pdf" -> "pdf"; "image/png" -> "png"; "image/jpeg" -> "jpg"
-                    else -> throw IllegalArgumentException("File hanya PDF, PNG atau JPEG")
+                    else -> throw IllegalArgumentException("Only PDF, PNG, or JPEG files are supported")
                 }
                 val bytes = withContext(Dispatchers.IO) {
                     context.contentResolver.openInputStream(uri)?.use { input ->
@@ -63,35 +63,35 @@ fun IntegraProjectWorkspaceDialog(projectId: Long, token: String, onDismiss: () 
                             out.write(buf, 0, read)
                         }
                         out.toByteArray()
-                    } ?: throw IllegalArgumentException("Tidak dapat membuka dokumen")
+                    } ?: throw IllegalArgumentException("Unable to open document")
                 }
                 if (bytes.size > 5 * 1024 * 1024) throw IllegalArgumentException("Ukuran maksimal 5MB")
                 val part = MultipartBody.Part.createFormData("file", "lampiran_${System.currentTimeMillis()}.$ext", bytes.toRequestBody(mime.toMediaTypeOrNull()))
                 App.retrofitService.uploadProjectDocument("Bearer $token", projectId, part,
                     documentType.toRequestBody("text/plain".toMediaTypeOrNull()))
-                message("Dokumen berhasil diunggah")
+                message("Document uploaded successfully")
                 refresh++
-            } catch (e: Exception) { message(e.message ?: "Upload gagal") }
+            } catch (e: Exception) { message(e.message ?: "Upload failed") }
             finally { busy = false }
         }
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Workspace Proyek #$projectId", fontWeight = FontWeight.Bold) },
+        title = { Text("Project Workspace #$projectId", fontWeight = FontWeight.Bold) },
         text = {
             Column(modifier = Modifier.fillMaxWidth().heightIn(max = 530.dp).verticalScroll(rememberScrollState())) {
                 if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (error != null) Text(error!!, color = MaterialTheme.colorScheme.error)
                 data?.let { overview ->
-                    Text("Progress ${overview.progressPercent}% · ${overview.completedMilestones}/${overview.totalMilestones} milestone selesai", style = MaterialTheme.typography.bodyMedium)
+                    Text("Progress ${overview.progressPercent}% · ${overview.completedMilestones}/${overview.totalMilestones} milestones completed", style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(6.dp))
                     LinearProgressIndicator(progress = { overview.progressPercent / 100f }, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(12.dp))
                     if (!overview.canEdit) {
-                        Text("Ringkasan anonim. Catatan dan dokumen milik Downline tidak dapat dibuka.")
+                        Text("Anonymous summary. Downline notes and documents cannot be accessed.")
                     } else {
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            listOf("Milestone", "Jadwal", "Dokumen").forEachIndexed { index, title ->
+                            listOf("Milestones", "Schedule", "Documents").forEachIndexed { index, title ->
                                 FilterChip(selected = tab == index, onClick = { tab = index }, label = { Text(title) })
                             }
                         }
@@ -104,19 +104,19 @@ fun IntegraProjectWorkspaceDialog(projectId: Long, token: String, onDismiss: () 
                                         if (item.status != "completed") TextButton(onClick = {
                                             scope.launch {
                                                 try { App.retrofitService.updateProjectMilestone("Bearer $token", item.id, MilestoneStatusRequest()); refresh++ }
-                                                catch (e: Exception) { message(e.message ?: "Update gagal") }
+                                                catch (e: Exception) { message(e.message ?: "Update failed") }
                                             }
-                                        }) { Text("Tandai selesai") }
+                                        }) { Text("Mark as complete") }
                                     }
                                     HorizontalDivider()
                                 }
-                                OutlinedTextField(value = newTitle, onValueChange = { newTitle = it }, label = { Text("Milestone baru") }, singleLine = true)
+                                OutlinedTextField(value = newTitle, onValueChange = { newTitle = it }, label = { Text("New milestone") }, singleLine = true)
                                 TextButton(enabled = newTitle.isNotBlank(), onClick = {
                                     scope.launch {
                                         try { App.retrofitService.createProjectMilestone("Bearer $token", projectId, CreateMilestoneRequest(newTitle.trim())); newTitle = ""; refresh++ }
-                                        catch (e: Exception) { message(e.message ?: "Gagal membuat milestone") }
+                                        catch (e: Exception) { message(e.message ?: "Failed to create milestone") }
                                     }
-                                }) { Text("Tambah milestone") }
+                                }) { Text("Add milestone") }
                             }
                             1 -> {
                                 Text("Follow-up", fontWeight = FontWeight.SemiBold)
@@ -129,7 +129,7 @@ fun IntegraProjectWorkspaceDialog(projectId: Long, token: String, onDismiss: () 
                                 }
                                 OutlinedTextField(value = newTitle, onValueChange = { newTitle = it },
                                     label = { Text(if (scheduleType == "meeting") "Judul meeting" else "Judul follow-up") })
-                                OutlinedTextField(value = taskWhen, onValueChange = { taskWhen = it }, label = { Text("Jadwal ISO (2026-11-21T09:00:00+07:00)") })
+                                OutlinedTextField(value = taskWhen, onValueChange = { taskWhen = it }, label = { Text("ISO schedule (2026-11-21T09:00:00+07:00)") })
                                 TextButton(enabled = newTitle.isNotBlank() && taskWhen.isNotBlank(), onClick = {
                                     scope.launch {
                                         try {
@@ -138,9 +138,9 @@ fun IntegraProjectWorkspaceDialog(projectId: Long, token: String, onDismiss: () 
                                             else App.retrofitService.createProjectFollowUp("Bearer $token", projectId,
                                                 CreateFollowUpRequest(newTitle.trim(), taskWhen.trim()))
                                             newTitle = ""; taskWhen = ""; refresh++
-                                        } catch (e: Exception) { message(e.message ?: "Gagal menyimpan jadwal") }
+                                        } catch (e: Exception) { message(e.message ?: "Failed to save schedule") }
                                     }
-                                }) { Text(if (scheduleType == "meeting") "Tambah meeting" else "Tambah follow-up") }
+                                }) { Text(if (scheduleType == "meeting") "Add meeting" else "Add follow-up") }
                             }
                             else -> {
                                 overview.documents.forEach { doc ->
@@ -152,32 +152,32 @@ fun IntegraProjectWorkspaceDialog(projectId: Long, token: String, onDismiss: () 
                                                     try {
                                                         val body = App.retrofitService.downloadProjectDocument("Bearer $token", doc.id)
                                                         val folder = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-                                                            ?: throw IllegalStateException("Penyimpanan tidak tersedia")
+                                                            ?: throw IllegalStateException("Storage is unavailable")
                                                         val safeName = doc.originalFilename.replace(Regex("[^A-Za-z0-9._-]"), "_")
                                                         val file = File(folder, "${doc.id}_$safeName")
                                                         withContext(Dispatchers.IO) { body.byteStream().use { input -> file.outputStream().use { output -> input.copyTo(output) } } }
-                                                        message("Disimpan di folder Downloads aplikasi: ${file.name}")
-                                                    } catch (e: Exception) { message(e.message ?: "Download gagal") }
+                                                        message("Saved to the app Downloads folder: ${file.name}")
+                                                    } catch (e: Exception) { message(e.message ?: "Download failed") }
                                                 }
                                             }) { Text("Download") }
                                             TextButton(onClick = {
                                                 scope.launch {
                                                     try { App.retrofitService.deleteProjectDocument("Bearer $token", doc.id); refresh++ }
-                                                    catch (e: Exception) { message(e.message ?: "Hapus gagal") }
+                                                    catch (e: Exception) { message(e.message ?: "Delete failed") }
                                                 }
-                                            }) { Text("Hapus") }
+                                            }) { Text("Delete") }
                                         }
                                     }
                                     HorizontalDivider()
                                 }
-                                Text("Jenis dokumen", fontWeight = FontWeight.SemiBold)
+                                Text("Document type", fontWeight = FontWeight.SemiBold)
                                 Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                                    listOf("other" to "Lain", "contract" to "Kontrak", "nda" to "NDA", "receipt" to "Bukti").forEach { (key, label) ->
+                                    listOf("other" to "Other", "contract" to "Contract", "nda" to "NDA", "receipt" to "Receipt").forEach { (key, label) ->
                                         FilterChip(selected = documentType == key, onClick = { documentType = key }, label = { Text(label) })
                                     }
                                 }
                                 TextButton(onClick = { picker.launch(arrayOf("application/pdf", "image/png", "image/jpeg")) }) {
-                                    Text("Upload PDF / PNG / JPG (maks. 5 MB)")
+                                    Text("Upload PDF / PNG / JPG (max. 5 MB)")
                                 }
                             }
                         }
@@ -185,7 +185,7 @@ fun IntegraProjectWorkspaceDialog(projectId: Long, token: String, onDismiss: () 
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Tutup") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
         shape = RoundedCornerShape(22.dp)
     )
 }

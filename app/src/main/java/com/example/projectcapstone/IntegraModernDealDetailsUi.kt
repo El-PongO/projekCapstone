@@ -163,13 +163,13 @@ fun IntegraModernDealsDetailsScreen(
                             runCatching {
                                 context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$clientNumber")))
                             }.onFailure {
-                                Toast.makeText(context, clientNumber.ifBlank { "Nomor klien tidak tersedia" }, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, clientNumber.ifBlank { "Client number not available" }, Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
 
                     DetailSectionCard(title = "Project Details") {
-                        InfoRow(icon = Icons.Default.Badge, label = "Agent Responsible", value = agentResponsible)
+                        InfoRow(icon = Icons.Default.Badge, label = "Responsible Agent", value = agentResponsible)
                         InfoRow(icon = Icons.Default.Storefront, label = "Product Type", value = productType)
                         InfoRow(icon = Icons.Default.BusinessCenter, label = "Deal Type", value = dealType)
                         InfoRow(icon = Icons.Default.Work, label = "Initial Price", value = initialPriceFormatted)
@@ -183,7 +183,7 @@ fun IntegraModernDealsDetailsScreen(
                             border = androidx.compose.foundation.BorderStroke(1.dp, DealBorder)
                         ) {
                             Text(
-                                text = dealDetails.ifBlank { "Belum ada detail deal." },
+                                text = dealDetails.ifBlank { "No deal details yet." },
                                 modifier = Modifier.padding(14.dp),
                                 color = Color.Black,
                                 fontSize = 14.sp,

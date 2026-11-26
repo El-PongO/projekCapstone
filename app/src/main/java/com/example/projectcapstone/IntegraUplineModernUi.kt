@@ -107,7 +107,7 @@ private fun ModernHeader(userName: String, pageTitle: String?, onBack: () -> Uni
                     onClick = onBack,
                     modifier = Modifier.size(36.dp).background(Primary, RoundedCornerShape(11.dp))
                 ) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Kembali",
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back",
                         tint = Color.White, modifier = Modifier.size(20.dp))
                 }
                 Spacer(Modifier.width(15.dp))
@@ -258,11 +258,11 @@ fun IntegraModernUplineHome(
                 .background(Brush.horizontalGradient(listOf(Color(0xFFE6EFFF), Color(0xFFF3F7FF))), CardRadius)
                 .padding(18.dp)
         ) {
-            Text("Selamat datang,", color = Muted, fontSize = 13.sp)
+            Text("Welcome,", color = Muted, fontSize = 13.sp)
             Text("${userName.substringBefore(' ')} 👋", color = Ink, fontSize = 23.sp,
                 fontWeight = FontWeight.ExtraBold)
             Spacer(Modifier.height(6.dp))
-            Text("Pantau performa tim dan proyek hari ini.", color = Muted, fontSize = 12.sp)
+            Text("Track team and project performance today.", color = Muted, fontSize = 12.sp)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             MetricTile("This Month's Cut", monthlyCutFormatted, Icons.Default.TrendingUp,
@@ -271,7 +271,7 @@ fun IntegraModernUplineHome(
                 Primary, Modifier.weight(1f))
         }
         ModernSurface {
-            SectionHeading("Menu Integra", "Akses cepat untuk aktivitas utama")
+            SectionHeading("Integra Menu", "Quick access to key activities")
             Spacer(Modifier.height(15.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 ShortcutTile("My Performance", Icons.Default.BarChart, onPerformanceClick)
@@ -279,9 +279,9 @@ fun IntegraModernUplineHome(
                 ShortcutTile("My CRM", Icons.Default.BusinessCenter, onCrmClick)
             }
         }
-        SectionHeading("Active Deals", "Kelola penawaran yang sedang berlangsung")
+        SectionHeading("Active Deals", "Manage active offers")
         if (activeDeals.isEmpty()) {
-            MessageState("Belum ada active deals.")
+            MessageState("No active deals yet.")
         } else {
             activeDeals.forEach { deal ->
                 ModernSurface {
@@ -311,7 +311,7 @@ fun IntegraModernUplineHome(
         }
         SectionHeading("Recent Downline Activity")
         if (activities.isEmpty()) {
-            MessageState("Belum ada aktivitas terbaru.")
+            MessageState("No recent activity.")
         } else {
             activities.forEach { activity ->
                 ModernSurface {
@@ -396,9 +396,9 @@ fun IntegraModernUplineDownlines(
                 focusedBorderColor = Primary, unfocusedBorderColor = Outline
             )
         )
-        SectionHeading("Agent Directory", "${filtered.size} anggota ditemukan")
+        SectionHeading("Agent Directory", "${filtered.size} agents found")
         if (loading) LoadingState()
-        else if (filtered.isEmpty()) MessageState("Tidak ada downline ditemukan.")
+        else if (filtered.isEmpty()) MessageState("No downlines found.")
         else filtered.forEach { agent ->
             ModernSurface {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -505,7 +505,7 @@ fun IntegraModernUplinePerformance(
         SectionHeading(if (selectedTab == 0) "Sales Report" else "Income History")
         if (loading) LoadingState()
         else if (selectedTab == 0) {
-            if (salesList.isEmpty()) MessageState("Belum ada data penjualan.")
+            if (salesList.isEmpty()) MessageState("No sales data yet.")
             salesList.forEach { sale ->
                 ModernSurface {
                     Row(verticalAlignment = Alignment.Top) {
@@ -539,7 +539,7 @@ fun IntegraModernUplinePerformance(
                 }
             }
         } else {
-            if (incomeList.isEmpty()) MessageState("Belum ada data komisi.")
+            if (incomeList.isEmpty()) MessageState("No commission data yet.")
             incomeList.forEach { income ->
                 ModernSurface {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -588,9 +588,9 @@ fun IntegraModernUplineCrm(
                 Primary, Modifier.weight(1f))
         }
         ModernTabs(listOf("Active", "Deals", "Dropped"), selectedTab, onTabSelected)
-        SectionHeading("Client Pipeline", "${cards.size} proyek dalam kategori ini")
+        SectionHeading("Client Pipeline", "${cards.size} projects in this category")
         if (loading) LoadingState()
-        else if (cards.isEmpty()) MessageState("Tidak ada proyek pada kategori ini.")
+        else if (cards.isEmpty()) MessageState("No projects in this category.")
         else cards.forEach { card ->
             val accent = when (selectedTab) {
                 0 -> when {
@@ -665,7 +665,7 @@ fun IntegraModernUplineNewDeal(
     ModernPage(userName, "New Deals", onBack, onHome, onAddProject = {}, onProfile = onProfile,
         addEnabled = false) {
         ModernSurface {
-            SectionHeading("Client Details", "Informasi calon klien")
+            SectionHeading("Client Details", "Prospective Client Information")
             Spacer(Modifier.height(14.dp))
             ModernInput("Client's Name *", clientName, { clientName = it }, Icons.Default.Person)
             Spacer(Modifier.height(10.dp))
@@ -678,7 +678,7 @@ fun IntegraModernUplineNewDeal(
                 KeyboardType.Phone)
         }
         ModernSurface {
-            SectionHeading("Project / Product Details", "Tentukan jenis dan nilai penawaran")
+            SectionHeading("Project / Product Details", "Set the offer type and amount")
             Spacer(Modifier.height(14.dp))
             Text("Product Type *", fontSize = 12.sp, color = Ink, fontWeight = FontWeight.Medium)
             Spacer(Modifier.height(6.dp))
@@ -689,10 +689,10 @@ fun IntegraModernUplineNewDeal(
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Outline)
                 ) {
-                    Text(selectedProduct?.itemName ?: "Pilih product type",
+                    Text(selectedProduct?.itemName ?: "Select a product type",
                         modifier = Modifier.weight(1f), maxLines = 1,
                         overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Start)
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = "Pilih produk")
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = "Select product")
                 }
                 DropdownMenu(expanded = dropdownExpanded,
                     onDismissRequest = { dropdownExpanded = false }) {
@@ -708,7 +708,7 @@ fun IntegraModernUplineNewDeal(
                 }
             }
             if (productItems.isEmpty()) {
-                Text("Daftar produk belum tersedia. Periksa koneksi master item.",
+                Text("No products are available. Check the master item connection.",
                     color = Negative, fontSize = 11.sp)
             }
             Spacer(Modifier.height(14.dp))
@@ -728,7 +728,7 @@ fun IntegraModernUplineNewDeal(
             Spacer(Modifier.height(6.dp))
             OutlinedTextField(
                 value = productDetails, onValueChange = { productDetails = it },
-                placeholder = { Text("Detail produk, catatan, atau kebutuhan klien...", fontSize = 12.sp) },
+                placeholder = { Text("Product details, notes, or client requirements...", fontSize = 12.sp) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
                 shape = RoundedCornerShape(12.dp), maxLines = 6,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -740,9 +740,9 @@ fun IntegraModernUplineNewDeal(
         Button(
             onClick = {
                 formError = when {
-                    clientName.isBlank() -> "Nama klien wajib diisi."
-                    selectedProduct == null -> "Silakan pilih product type."
-                    (firstOffer.replace(",", "").replace("$", "").trim().toDoubleOrNull() ?: 0.0) <= 0 -> "First offer harus lebih dari 0."
+                    clientName.isBlank() -> "Client name is required."
+                    selectedProduct == null -> "Please select a product type."
+                    (firstOffer.replace(",", "").replace("$", "").trim().toDoubleOrNull() ?: 0.0) <= 0 -> "The initial offer must be greater than 0."
                     else -> ""
                 }
                 if (formError.isEmpty() && selectedProduct != null) {

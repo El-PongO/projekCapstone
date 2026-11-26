@@ -1,9 +1,10 @@
 const r=require('express').Router(),fs=require('fs'),path=require('path');
 const PDFDocument=require('pdfkit');const {finished}=require('stream/promises');
 const db=require('../config/database');
-const {Proposal,ProposalItem,Item,Project}=require('../models');
-const {auth}=require('../middleware/auth');const {findProject,projectScope}=require('../services/access');
-const {wrap,fail,id,nonempty,optional,amount,date,code,num,round,page,Op}=require('../utils/common');
+const {Proposal,ProposalItem,Item}=require('../models');
+const {auth}=require('../middleware/auth');const {findProject}=require('../services/access');
+const {wrap,fail,id,nonempty,optional,amount,date,code,page}=require('../utils/common');
+const {drawProposal}=require('../services/proposalPresentation');
 const folder=path.resolve(__dirname,'../../uploads/proposals');fs.mkdirSync(folder,{recursive:true});
 r.use(auth);
 async function proposalRows(values){
@@ -26,19 +27,8 @@ r.post('/projects/:projectId',wrap(async(req,res)=>{
  const number=code('PRP'),basename=number+'.pdf',filepath=path.join(folder,basename);
  try{
   const pdf=new PDFDocument({size:'A4',margin:45});const file=fs.createWriteStream(filepath);pdf.pipe(file);
-  pdf.fontSize(19).text('INTEGRA AGENCY',{align:'center'}).moveDown(0.4);
-  pdf.fontSize(15).text(title).moveDown(0.6);
-  pdf.fontSize(10).text(`Nomor: ${number}`).text(`Proyek: ${p.project_code}`).text(`Klien: ${p.client_name}`).text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`).text(`Berlaku sampai: ${validUntil||'-'}`).moveDown();
-  pdf.fontSize(11).text('Rincian Penawaran',{underline:true}).moveDown(0.5);
-  let total=0;
-  for(const [i,x] of lines.entries()){
-   const subtotal=round(num(x.unit_price)*x.quantity);total=round(total+subtotal);
-   pdf.fontSize(10).text(`${i+1}. ${x.item_name} - ${x.quantity} x Rp ${num(x.unit_price).toLocaleString('id-ID')} = Rp ${subtotal.toLocaleString('id-ID')}`);
-   if(x.description)pdf.fontSize(9).fillColor('#666666').text(x.description).fillColor('#000000');
-   pdf.moveDown(0.4);
-  }
-  pdf.moveDown().fontSize(13).text(`TOTAL PENAWARAN: Rp ${total.toLocaleString('id-ID')}`,{align:'right'});
-  pdf.moveDown(2).fontSize(9).text('Dokumen dibuat otomatis oleh Integra Agency.');pdf.end();await finished(file);
+  const total=drawProposal(pdf,{title,number,projectCode:p.project_code,clientName:p.client_name,validUntil,createdAt:new Date(),lines});
+  pdf.end();await finished(file);
   const result=await db.transaction(async transaction=>{
    const rec=await Proposal.create({proposal_number:number,project_id:p.id,agent_id:req.user.id,proposal_title:title,pdf_file_path:'proposals/'+basename,valid_until:validUntil},{transaction});
    for(const x of lines)await ProposalItem.create({...x,proposal_id:rec.id},{transaction});

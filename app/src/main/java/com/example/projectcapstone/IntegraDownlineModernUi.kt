@@ -151,7 +151,7 @@ fun IntegraModernDownlineHome(
 
                 Surface(shape = RoundedCornerShape(24.dp), color = DlCard, shadowElevation = 4.dp) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Menu Downline", fontWeight = FontWeight.SemiBold, color = Color.Black, fontSize = 13.sp)
+                        Text("Downline Menu", fontWeight = FontWeight.SemiBold, color = Color.Black, fontSize = 13.sp)
                         Spacer(Modifier.height(14.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -188,7 +188,7 @@ fun IntegraModernDownlineHome(
                                 CircularProgressIndicator(color = DlPrimary)
                             }
                         } else if (notifications.isEmpty()) {
-                            EmptyStateCard("Belum ada notifikasi terbaru.")
+                            EmptyStateCard("No recent notifications.")
                         } else {
                             notifications.forEachIndexed { index, item ->
                                 NotificationCardModern(item = item, onSeeDetails = { onSeeNotificationDetails(item) })
@@ -253,7 +253,7 @@ fun IntegraModernDownlinePerformance(
                         CircularProgressIndicator(color = DlPrimary)
                     }
                 } else if (reportItems.isEmpty()) {
-                    EmptyStateCard("Belum ada sales report.")
+                    EmptyStateCard("No sales reports yet.")
                 } else {
                     reportItems.forEach { item ->
                         SalesReportCard(item)
@@ -348,7 +348,7 @@ fun IntegraModernDownlineCrm(
                         CircularProgressIndicator(color = DlPrimary)
                     }
                 } else if (visibleCards.isEmpty()) {
-                    EmptyStateCard("Belum ada data pada tab ini.")
+                    EmptyStateCard("No data in this tab.")
                 } else {
                     visibleCards.forEach { card ->
                         CrmCardModern(card = card, selectedTab = selectedTab, onViewDetails = { onViewDetails(card) })

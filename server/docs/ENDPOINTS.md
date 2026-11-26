@@ -219,6 +219,9 @@ Contoh Milestone:
 | GET | `/api/proposals/:id` | Detail metadata dan proposal_items |
 | GET | `/api/proposals/:id/download` | Unduh PDF private |
 
+Proposal baru menggunakan tabel berjudul dengan garis dan total penawaran. Proposal
+yang sudah dibuat tetap menggunakan PDF tersimpan agar dokumen historis tidak berubah.
+
 ```json
 {
  "title":"Penawaran Sistem Informasi",

@@ -62,13 +62,13 @@ fun UplineScreen(
     activities: List<DownlineActivity> = listOf(
         DownlineActivity(
             "DNL-001",
-            "Memperbarui status proyek menjadi Follow Up",
-            "10 menit lalu"
+            "Updating project status to Follow Up",
+            "10 minutes ago"
         ),
         DownlineActivity(
             "DNL-002",
-            "Menambahkan proyek baru",
-            "30 menit lalu"
+            "Adding a new project",
+            "30 minutes ago"
         )
     ),
     onNotificationClick: () -> Unit = {},
@@ -315,7 +315,7 @@ private fun UplineMainMenu(
     ) {
 
         Text(
-            text = "my Upline menu",
+            text = "My Upline Menu",
             color = Color.White,
             fontSize = 12.sp,
             modifier = Modifier.padding(
@@ -459,7 +459,7 @@ private fun UplineActiveDeals(
 
         if (deals.isEmpty()) {
             Text(
-                text = "Belum ada active deals",
+                text = "No active deals yet",
                 color = Color.Gray,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(16.dp)

@@ -88,9 +88,9 @@ private fun money(value: Double): String = NumberFormat.getCurrencyInstance(
 
 private fun roleLabel(role: String) = when (role) {
     "admin" -> "Admin"
-    "upline" -> "Agen Upline"
-    "downline" -> "Agen Downline"
-    else -> "Pengguna"
+    "upline" -> "Upline Agent"
+    "downline" -> "Downline Agent"
+    else -> "User"
 }
 
 
@@ -271,8 +271,8 @@ private fun LoginScreen(onLogin: (String, String, (Result<LoginSession>) -> Unit
 
     fun submit() {
         error = when {
-            identifier.isBlank() -> "Email atau kode agen wajib diisi."
-            password.isBlank() -> "Password wajib diisi."
+            identifier.isBlank() -> "Email or agent code is required."
+            password.isBlank() -> "Password is required."
             else -> ""
         }
         if (error.isNotBlank() || loading) return
@@ -281,9 +281,9 @@ private fun LoginScreen(onLogin: (String, String, (Result<LoginSession>) -> Unit
             loading = false
             result.onFailure { e ->
                 error = if (e is ApiError && e.unauthorized) {
-                    "Email/kode agen atau password salah."
+                    "Incorrect email, agent code, or password."
                 } else {
-                    "Tidak dapat terhubung ke server: ${e.message.orEmpty()}"
+                    "Unable to connect to the server: ${e.message.orEmpty()}"
                 }
             }
         }
@@ -312,7 +312,7 @@ private fun LoginScreen(onLogin: (String, String, (Result<LoginSession>) -> Unit
                 contentScale = ContentScale.Fit
             )
             Spacer(Modifier.height(10.dp))
-            Text("SISTEM KEAGENAN & PELACAKAN PROYEK", color = Color(0xFFCED7E3),
+            Text("AGENCY MANAGEMENT & PROJECT TRACKING", color = Color(0xFFCED7E3),
                 fontSize = 11.sp, letterSpacing = 1.sp, textAlign = TextAlign.Center)
             Spacer(Modifier.height(32.dp))
             Card(
@@ -322,16 +322,16 @@ private fun LoginScreen(onLogin: (String, String, (Result<LoginSession>) -> Unit
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF9FAFC))
             ) {
                 Column(Modifier.fillMaxWidth().padding(24.dp)) {
-                    Text("Selamat datang!", color = Ink, fontSize = 24.sp,
+                    Text("Welcome!", color = Ink, fontSize = 24.sp,
                         fontWeight = FontWeight.Bold)
-                    Text("Masuk untuk mengakses akun keagenan Anda.", color = Muted,
+                    Text("Sign in to access your agency account.", color = Muted,
                         fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp))
                     Spacer(Modifier.height(26.dp))
-                    Text("Email / Kode Agen", color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                    Text("Email / Agent Code", color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = identifier, onValueChange = { identifier = it; error = "" },
-                        placeholder = { Text("id atau email", fontSize = 13.sp) },
+                        placeholder = { Text("ID or email", fontSize = 13.sp) },
                         modifier = Modifier.fillMaxWidth(), singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next)
@@ -341,14 +341,14 @@ private fun LoginScreen(onLogin: (String, String, (Result<LoginSession>) -> Unit
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = password, onValueChange = { password = it; error = "" },
-                        placeholder = { Text("Masukkan password", fontSize = 13.sp) },
+                        placeholder = { Text("Enter password", fontSize = 13.sp) },
                         modifier = Modifier.fillMaxWidth(), singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         visualTransformation = if (showPassword) VisualTransformation.None
                         else PasswordVisualTransformation(),
                         trailingIcon = {
                             TextButton(onClick = { showPassword = !showPassword }) {
-                                Text(if (showPassword) "Tutup" else "Lihat", fontSize = 12.sp)
+                                Text(if (showPassword) "Hide" else "Show", fontSize = 12.sp)
                             }
                         },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
@@ -367,20 +367,20 @@ private fun LoginScreen(onLogin: (String, String, (Result<LoginSession>) -> Unit
                     ) {
                         if (loading) CircularProgressIndicator(
                             modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White
-                        ) else Text("MASUK", fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                        ) else Text("SIGN IN", fontSize = 15.sp, fontWeight = FontWeight.Bold,
                             letterSpacing = 0.6.sp)
                     }
                     Spacer(Modifier.height(18.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically) {
-                        Text("Belum memiliki akun? ", color = Muted, fontSize = 12.sp)
-                        Text("Hubungi Admin", color = Orange, fontSize = 12.sp,
+                        Text("Don't have an account? ", color = Muted, fontSize = 12.sp)
+                        Text("Contact Admin", color = Orange, fontSize = 12.sp,
                             fontWeight = FontWeight.Bold, modifier = Modifier.clickable {
                                 try {
                                     context.startActivity(Intent(Intent.ACTION_SENDTO,
                                         Uri.parse("mailto:admin@integraciptadata.com")))
                                 } catch (_: ActivityNotFoundException) {
-                                    Toast.makeText(context, "Tidak ada aplikasi email", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "No email app available", Toast.LENGTH_SHORT).show()
                                 }
                             })
                     }
@@ -413,7 +413,7 @@ private fun DashboardScreen(
             result.onSuccess { dashboard = it; error = "" }
             result.onFailure { failure ->
                 if (failure is ApiError && failure.unauthorized) onExpired()
-                else error = failure.message ?: "Server tidak dapat dihubungi"
+                else error = failure.message ?: "Unable to reach the server"
             }
         }
     }
@@ -432,10 +432,10 @@ private fun DashboardScreen(
                             Text("INTEGRA AGENCY", color = Color(0xFFCAD6E7), fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
                             Spacer(Modifier.height(10.dp))
-                            Text("Halo, ${session.user.name.substringBefore(' ')}!",
+                            Text("Hello, ${session.user.name.substringBefore(' ')}!",
                                 color = Color.White, fontWeight = FontWeight.Bold, fontSize = 26.sp)
                             Spacer(Modifier.height(5.dp))
-                            Text("Pantau aktivitas keagenan di sini.",
+                            Text("Track your agency activity here.",
                                 color = Color(0xFFCED9E9), fontSize = 13.sp)
                         }
                         TextButton(
@@ -443,7 +443,7 @@ private fun DashboardScreen(
                             contentPadding = PaddingValues(horizontal = 4.dp)
                         ) {
                             Text(
-                                text = "Keluar",
+                                text = "Sign out",
                                 color = Color.White,
                                 fontSize = 11.sp
                             )
@@ -458,7 +458,7 @@ private fun DashboardScreen(
             }
         }
         item {
-            Text("Ringkasan Kinerja", fontSize = 18.sp, fontWeight = FontWeight.Bold,
+            Text("Performance Summary", fontSize = 18.sp, fontWeight = FontWeight.Bold,
                 color = Ink, modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 24.dp, bottom = 12.dp))
         }
         if (loading) {
@@ -473,17 +473,17 @@ private fun DashboardScreen(
                 item {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        MetricCard("Total Proyek", "${stats.totalProjects}", Modifier.weight(1f))
-                        MetricCard("Proyek Deal", "${stats.dealCount}", Modifier.weight(1f))
+                        MetricCard("Total Projects", "${stats.totalProjects}", Modifier.weight(1f))
+                        MetricCard("Closed Deals", "${stats.dealCount}", Modifier.weight(1f))
                     }
                     Spacer(Modifier.height(10.dp))
                     Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        MetricCard("Nilai Deal", money(stats.dealValue), Modifier.weight(1f))
+                        MetricCard("Deal Value", money(stats.dealValue), Modifier.weight(1f))
                         val label = when (session.user.role) {
-                            "admin" -> "Agen Aktif"
+                            "admin" -> "Active Agents"
                             "upline" -> "Downline"
-                            else -> "Komisi Saya"
+                            else -> "My Commission"
                         }
                         val value = if (session.user.role == "downline")
                             money(stats.myCommission) else "${stats.agentCount}"
@@ -493,23 +493,23 @@ private fun DashboardScreen(
             }
         }
         item {
-            Text("Menu Utama", fontSize = 18.sp, fontWeight = FontWeight.Bold,
+            Text("Main Menu", fontSize = 18.sp, fontWeight = FontWeight.Bold,
                 color = Ink, modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 26.dp, bottom = 12.dp))
             Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                ActionCard("My Performance", "Penjualan & komisi", Modifier.weight(1f), onPerformance)
-                ActionCard("Proyek", "Dalam pengembangan", Modifier.weight(1f)) {
-                    Toast.makeText(context, "Modul CRUD proyek berikutnya", Toast.LENGTH_SHORT).show()
+                ActionCard("My Performance", "Sales & commission", Modifier.weight(1f), onPerformance)
+                ActionCard("Project", "In development", Modifier.weight(1f)) {
+                    Toast.makeText(context, "Upcoming project management module", Toast.LENGTH_SHORT).show()
                 }
             }
         }
         item {
-            Text("Proyek Terbaru", fontSize = 18.sp, fontWeight = FontWeight.Bold,
+            Text("Recent Projects", fontSize = 18.sp, fontWeight = FontWeight.Bold,
                 color = Ink, modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 26.dp, bottom = 12.dp))
         }
         val projects = dashboard?.recentProjects.orEmpty()
         if (!loading && error.isBlank() && projects.isEmpty()) {
-            item { Text("Belum ada proyek yang tercatat.", color = Muted,
+            item { Text("No projects have been recorded yet.", color = Muted,
                 modifier = Modifier.padding(horizontal = 22.dp)) }
         } else {
             items(projects) { project ->
@@ -589,7 +589,7 @@ private fun ErrorPane(message: String, onRetry: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 22.dp),
         horizontalAlignment = Alignment.CenterHorizontally) {
         Text(message, color = Color(0xFFB42318), textAlign = TextAlign.Center, fontSize = 13.sp)
-        TextButton(onClick = onRetry) { Text("Coba lagi") }
+        TextButton(onClick = onRetry) { Text("Try again") }
     }
 }
 
@@ -608,7 +608,7 @@ private fun PerformanceScreen(session: LoginSession, onBack: () -> Unit, onExpir
             result.onSuccess { data = it; error = "" }
             result.onFailure {
                 if (it is ApiError && it.unauthorized) onExpired()
-                else error = it.message ?: "Gagal mengambil data"
+                else error = it.message ?: "Failed to retrieve data"
             }
         }
     }
@@ -619,7 +619,7 @@ private fun PerformanceScreen(session: LoginSession, onBack: () -> Unit, onExpir
         item {
             Row(Modifier.fillMaxWidth().background(Navy).padding(horizontal = 18.dp, vertical = 18.dp),
                 verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onBack) { Text("‹ Kembali", color = Color.White) }
+                TextButton(onClick = onBack) { Text("‹ Back", color = Color.White) }
                 Spacer(Modifier.width(8.dp))
                 Text("My Performance", color = Color.White, fontSize = 20.sp,
                     fontWeight = FontWeight.Bold)
@@ -656,7 +656,7 @@ private fun PerformanceScreen(session: LoginSession, onBack: () -> Unit, onExpir
                 }
                 if (tab == 0) {
                     if (perf.sales.isEmpty()) {
-                        item { Text("Belum ada penjualan.", color = Muted,
+                        item { Text("No sales yet.", color = Muted,
                             modifier = Modifier.padding(22.dp)) }
                     } else {
                         items(perf.sales) { sale ->
@@ -665,7 +665,7 @@ private fun PerformanceScreen(session: LoginSession, onBack: () -> Unit, onExpir
                     }
                 } else {
                     if (perf.income.isEmpty()) {
-                        item { Text("Belum ada komisi yang tercatat.", color = Muted,
+                        item { Text("No commissions have been recorded yet.", color = Muted,
                             modifier = Modifier.padding(22.dp)) }
                     } else {
                         items(perf.income) { income ->

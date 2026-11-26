@@ -338,7 +338,7 @@ private fun UplineHomeRoute(
                             Toast.makeText(context, "Marked as No Deal", Toast.LENGTH_SHORT).show()
                             localRefresh++
                         }.onFailure { error ->
-                            Toast.makeText(context, error.message ?: "Status gagal diubah", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, error.message ?: "Failed to update status", Toast.LENGTH_LONG).show()
                         }
                     }
                 }
@@ -398,7 +398,7 @@ private fun UplineHomeRoute(
                                     localRefresh++
                                     Toast.makeText(context, "Counter offer submitted!", Toast.LENGTH_SHORT).show()
                                 }.onFailure { error ->
-                                    Toast.makeText(context, error.message ?: "Counter offer gagal", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, error.message ?: "Counteroffer failed", Toast.LENGTH_LONG).show()
                                 }
                             }
                         }
@@ -834,10 +834,10 @@ private fun UplineNewDealsRoute(
             val offerVal = firstOfferStr.replace(",", "").replace("$", "").trim().toDoubleOrNull() ?: 0.0
             when {
                 clientName.isBlank() -> {
-                    Toast.makeText(context, "Client's Name wajib diisi", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Client name is required", Toast.LENGTH_SHORT).show()
                 }
                 offerVal <= 0.0 -> {
-                    Toast.makeText(context, "Product's First offer harus lebih dari 0", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "The initial product offer must be greater than 0", Toast.LENGTH_SHORT).show()
                 }
                 else -> {
                     submitting = true

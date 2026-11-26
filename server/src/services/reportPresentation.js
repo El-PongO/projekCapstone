@@ -81,13 +81,6 @@ function wrapText(pdf, value, width) {
 }
 
 function drawPdfReport(pdf, type, from, to, data, summary) {
-  const cols = columns(type);
-  const left = pdf.page.margins.left;
-  const width = pdf.page.width - left - pdf.page.margins.right;
-  const colWidth = width / cols.length;
-  const bottom = () => pdf.page.height - pdf.page.margins.bottom;
-  const padding = 4;
-  const lineHeight = 10;
   pdf.font('Helvetica-Bold').fontSize(16).fillColor('#1946B8').text(reports[type][0]);
   pdf.font('Helvetica').fontSize(9).fillColor('#475569')
     .text(`Periode: ${from === '1900-01-01' ? 'Awal' : from} - ${to === '9999-12-31' ? 'Sekarang' : to}`).moveDown();
@@ -95,14 +88,31 @@ function drawPdfReport(pdf, type, from, to, data, summary) {
     pdf.font('Helvetica-Bold').fillColor('#1E293B').text(`${label(key)}: ${valueText(value)}`);
   }
   pdf.moveDown();
+  drawPdfTable(pdf, columns(type), data);
+}
+
+function drawPdfTable(pdf, cols, data) {
+  const left = pdf.page.margins.left;
+  const width = pdf.page.width - left - pdf.page.margins.right;
+  const weights = cols.map(col => col.weight || 1);
+  const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
+  const widths = weights.map(weight => width * weight / weightTotal);
+  const positions = widths.map((_, i) => left + widths.slice(0, i).reduce((sum, w) => sum + w, 0));
+  const bottom = () => pdf.page.height - pdf.page.margins.bottom;
+  const padding = 4;
+  const lineHeight = 10;
   let y = pdf.y;
   function header() {
     pdf.font('Helvetica-Bold').fontSize(8);
-    const lines = cols.map(col => wrapText(pdf, col.label, colWidth - 2*padding));
+    const lines = cols.map((col,i) => wrapText(pdf, col.label, widths[i] - 2*padding));
     const height = Math.max(...lines.map(x => x.length))*lineHeight + 2*padding;
+    if (y + height + lineHeight + 2*padding > bottom()) {
+      pdf.addPage();
+      y = pdf.page.margins.top;
+    }
     pdf.rect(left,y,width,height).fill('#1946B8');
     lines.forEach((parts,i) => parts.forEach((part,j) => {
-      pdf.fillColor('#FFFFFF').text(part,left+i*colWidth+padding,y+padding+j*lineHeight,{lineBreak:false});
+      pdf.fillColor('#FFFFFF').text(part,positions[i]+padding,y+padding+j*lineHeight,{lineBreak:false});
     }));
     y += height;
   }
@@ -111,7 +121,7 @@ function drawPdfReport(pdf, type, from, to, data, summary) {
   pdf.font('Helvetica').fontSize(8);
   for (const row of data) {
     pdf.font('Helvetica').fontSize(8);
-    const cells = cols.map(col => wrapText(pdf,row[col.key],colWidth-2*padding));
+    const cells = cols.map((col,i) => wrapText(pdf,row[col.key],widths[i]-2*padding));
     const lines = Math.max(...cells.map(cell => cell.length));
     let offset = 0;
     while (offset < lines) {
@@ -121,8 +131,8 @@ function drawPdfReport(pdf, type, from, to, data, summary) {
       const height = count*lineHeight+2*padding;
       pdf.font('Helvetica').fontSize(8);
       cols.forEach((col,i) => {
-        const x = left+i*colWidth;
-        pdf.rect(x,y,colWidth,height).lineWidth(0.5).strokeColor('#CBD5E1').stroke();
+        const x = positions[i];
+        pdf.rect(x,y,widths[i],height).lineWidth(0.5).strokeColor('#CBD5E1').stroke();
         for (let j=0; j<count; j++) {
           if (cells[i][offset+j] !== undefined)
             pdf.fillColor('#1E293B').text(cells[i][offset+j],x+padding,y+padding+j*lineHeight,{lineBreak:false});
@@ -133,7 +143,9 @@ function drawPdfReport(pdf, type, from, to, data, summary) {
       if (offset < lines) nextPage();
     }
   }
+  pdf.x = left;
+  pdf.y = y;
   if (!data.length) pdf.font('Helvetica').fontSize(9).fillColor('#475569').text('Belum ada data',left,y+10);
 }
 
-module.exports = {reports, columns, label, addTableSheet, drawPdfReport};
+module.exports = {reports, columns, label, addTableSheet, drawPdfReport, drawPdfTable};

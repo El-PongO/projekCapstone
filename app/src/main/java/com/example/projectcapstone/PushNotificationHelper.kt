@@ -43,12 +43,12 @@ object PushNotificationHelper {
                 if (fcmToken.isNotBlank()) {
                     context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         .edit().putString("fcm_token", fcmToken).apply()
-                    Log.d("IntegraFCM", "FCM registration token tersedia (isi token tidak dicetak)")
+                    Log.d("IntegraFCM", "FCM registration token available (token value is not logged)")
                     onToken(fcmToken)
                 }
             }
             .addOnFailureListener { error ->
-                Log.e("IntegraFCM", "Gagal mengambil FCM token: ${error.message}")
+                Log.e("IntegraFCM", "Failed to retrieve FCM token: ${error.message}")
             }
     }
 
@@ -56,7 +56,7 @@ object PushNotificationHelper {
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit().remove("fcm_token").apply()
         FirebaseMessaging.getInstance().deleteToken()
-            .addOnFailureListener { error -> Log.w("IntegraFCM", "Gagal menghapus token lokal: ${error.message}") }
+            .addOnFailureListener { error -> Log.w("IntegraFCM", "Failed to remove local token: ${error.message}") }
     }
 
     fun showSystemNotification(

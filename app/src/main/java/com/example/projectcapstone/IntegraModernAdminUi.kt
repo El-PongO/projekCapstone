@@ -195,7 +195,7 @@ fun IntegraModernAdminHomeScreen(
                     }
                 }
                 item {
-                    ModernSectionCard("My Admin Menu", "Akses cepat ke modul utama") {
+                    ModernSectionCard("My Admin Menu", "Quick access to the main modules") {
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             listOf(
                                 listOf(
@@ -228,10 +228,10 @@ fun IntegraModernAdminHomeScreen(
                     }
                 }
                 item {
-                    ModernSectionCard("Recent Employee Activity", "Approval, client, dan follow up terbaru") {
+                    ModernSectionCard("Recent Employee Activity", "Latest approvals, clients, and follow-ups") {
                         val notifList = notifications.take(3)
                         if (notifList.isEmpty()) {
-                            Text("Belum ada aktivitas terbaru.", color = AdminModernTextMuted, fontSize = 13.sp)
+                            Text("No recent activity.", color = AdminModernTextMuted, fontSize = 13.sp)
                         } else {
                             notifList.forEach { notif ->
                                 Surface(shape = RoundedCornerShape(18.dp), border = androidx.compose.foundation.BorderStroke(1.dp, AdminModernBorder), color = Color.White) {
@@ -244,7 +244,7 @@ fun IntegraModernAdminHomeScreen(
                                             Text(notif.title.ifBlank { "Activity update" }, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                         }
                                         Spacer(Modifier.height(8.dp))
-                                        Text(notif.message.ifBlank { "Tidak ada detail notifikasi." }, fontSize = 12.sp, color = Color(0xFF475569), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        Text(notif.message.ifBlank { "No notification details." }, fontSize = 12.sp, color = Color(0xFF475569), maxLines = 2, overflow = TextOverflow.Ellipsis)
                                     }
                                 }
                             }
@@ -252,10 +252,10 @@ fun IntegraModernAdminHomeScreen(
                     }
                 }
                 item {
-                    ModernSectionCard("Recent Projects", "Tap kartu untuk membuka detail deal") {
+                    ModernSectionCard("Recent Projects", "Tap a card to view deal details") {
                         val projectList = recentProjects.take(3)
                         if (projectList.isEmpty()) {
-                            Text("Belum ada project terbaru.", color = AdminModernTextMuted, fontSize = 13.sp)
+                            Text("No recent projects.", color = AdminModernTextMuted, fontSize = 13.sp)
                         } else {
                             projectList.forEach { project ->
                                 Surface(
@@ -305,7 +305,7 @@ fun IntegraModernAdminAgentsHubScreen(
     Scaffold(containerColor = AdminModernBg, bottomBar = { AdminBottomBar(currentPage = AdminPage.AGENTS_HUB, onNavigate = onBottomNavigate) }) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).background(AdminModernBg)) {
             RoleTopBar(roleTitle = "Admin", userName = userName)
-            ModernAdminPageTitle(title = "Select Agent to View", onBack = onBack)
+            ModernAdminPageTitle(title = "Select an Agent to View", onBack = onBack)
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 Text("Choose an agent hierarchy to view", fontSize = 13.sp, color = AdminModernTextMuted)
                 ModernAgentHubCard(
@@ -391,7 +391,7 @@ fun IntegraModernAdminAgentListScreen(
                 Surface(shape = RoundedCornerShape(26.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.dp, AdminModernBorder), shadowElevation = 4.dp, modifier = Modifier.fillMaxSize()) {
                     LazyColumn(contentPadding = PaddingValues(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         if (agents.isEmpty()) {
-                            item { Text("Belum ada agent yang cocok dengan pencarian.", color = AdminModernTextMuted, fontSize = 13.sp) }
+                            item { Text("No agents match your search.", color = AdminModernTextMuted, fontSize = 13.sp) }
                         }
                         items(agents) { agent ->
                             Surface(modifier = Modifier.fillMaxWidth().clickable { onSelectAgent(agent) }, shape = RoundedCornerShape(20.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.dp, AdminModernBorder)) {

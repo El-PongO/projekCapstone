@@ -98,7 +98,7 @@ fun UplineDownlinesScreen(
                     if (response.isSuccessful && response.body() != null) {
                         teamData = response.body()
                     } else {
-                        error = "Gagal mengambil data Downline (${response.code()})"
+                        error = "Failed to retrieve downline data (${response.code()})"
                     }
                 }
 
@@ -107,7 +107,7 @@ fun UplineDownlinesScreen(
                     t: Throwable
                 ) {
                     loading = false
-                    error = t.message ?: "Server tidak dapat dihubungi"
+                    error = t.message ?: "Unable to reach the server"
                 }
             })
     }
@@ -336,7 +336,7 @@ fun UplineDownlinesScreen(
                         )
 
                         TextButton(onClick = { refresh++ }) {
-                            Text("Coba lagi")
+                            Text("Try again")
                         }
                     } else {
 
@@ -351,7 +351,7 @@ fun UplineDownlinesScreen(
 
                         if (filtered.isEmpty()) {
                             Text(
-                                text = "Tidak ada Downline ditemukan",
+                                text = "No downlines found",
                                 fontSize = 13.sp,
                                 color = Color.Gray,
                                 modifier = Modifier.padding(20.dp)
@@ -554,7 +554,7 @@ private fun TeamDetailContent(
                     if (response.isSuccessful) {
                         detail = response.body()
                     } else {
-                        error = "Gagal mengambil detail (${response.code()})"
+                        error = "Failed to retrieve details (${response.code()})"
                     }
                 }
 
@@ -563,7 +563,7 @@ private fun TeamDetailContent(
                     t: Throwable
                 ) {
                     loading = false
-                    error = t.message ?: "Koneksi gagal"
+                    error = t.message ?: "Connection failed"
                 }
             })
     }
@@ -576,7 +576,7 @@ private fun TeamDetailContent(
     if (error.isNotBlank()) {
         Text(error, color = Color.Red)
         TextButton(onClick = { refresh++ }) {
-            Text("Coba lagi")
+            Text("Try again")
         }
         return
     }
@@ -641,7 +641,7 @@ private fun TeamDetailContent(
 
     if (data.projects.isEmpty()) {
         Text(
-            "Belum ada proyek.",
+            "No projects yet.",
             color = Color.Gray,
             fontSize = 13.sp
         )

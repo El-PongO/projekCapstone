@@ -571,7 +571,7 @@ fun GlobalDealsDetailsRoute(
             onClick = { showDealWorkflow = true },
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 14.dp, bottom = 160.dp),
             containerColor = Color(0xFF0E9F6E), contentColor = Color.White,
-            text = { Text("Deal & Komisi") },
+            text = { Text("Deals & Commissions") },
             icon = { Icon(Icons.Default.Add, contentDescription = null) }
         )
     }
@@ -692,9 +692,9 @@ fun GlobalProfileRoute(
     var loading by remember { mutableStateOf(true) }
     var fullName by remember { mutableStateOf(session.user.name) }
     var userIdCode by remember { mutableStateOf(session.user.agentCode) }
-    var phone by remember { mutableStateOf("Belum diisi") }
+    var phone by remember { mutableStateOf("Not provided") }
     var email by remember { mutableStateOf(session.user.email) }
-    val familySince = "Belum tersedia" // Tanggal bergabung belum ada dalam UserProfileDto.
+    val familySince = "Not available yet" // Tanggal bergabung belum ada dalam UserProfileDto.
     var totalDeals by remember { mutableIntStateOf(0) }
     var dealsPerMonth by remember { mutableDoubleStateOf(0.0) }
     var accountActive by remember { mutableStateOf(true) }
@@ -709,7 +709,7 @@ fun GlobalProfileRoute(
             result.onSuccess { payload ->
                 fullName = payload.profile.name.ifBlank { session.user.name }
                 userIdCode = payload.profile.agentCode.ifBlank { session.user.agentCode }
-                phone = payload.profile.phoneNumber?.takeIf { it.isNotBlank() } ?: "Belum diisi"
+                phone = payload.profile.phoneNumber?.takeIf { it.isNotBlank() } ?: "Not provided"
                 email = payload.profile.email.ifBlank { session.user.email }
                 accountActive = payload.profile.isActive
                 totalDeals = payload.totalDeals
@@ -717,7 +717,7 @@ fun GlobalProfileRoute(
             }
             result.onFailure { err ->
                 if (err is ApiError && err.unauthorized) onExpired()
-                else loadingError = err.message ?: "Gagal memuat profile"
+                else loadingError = err.message ?: "Failed to load profile"
             }
         }
     }
@@ -756,11 +756,11 @@ fun GlobalProfileRoute(
 fun GlobalProfileScreenContent(
     roleTitle: String = "Upline",
     headerUserName: String = "XXX",
-    profileName: String = "Agent Integra",
+    profileName: String = "Integra Agent",
     userIdCode: String = "UPL-001",
-    phoneNumber: String = "Belum diisi",
+    phoneNumber: String = "Not provided",
     email: String = "agent@example.com",
-    familySince: String = "Belum tersedia",
+    familySince: String = "Not available yet",
     totalDeals: Int = 0,
     performanceText: String = "0.0 deals/month",
     centerBarLabel: String = "add project",

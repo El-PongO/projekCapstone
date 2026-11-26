@@ -367,7 +367,7 @@ private fun DownlineHomeRoute(
                         DownlineNotificationItemUi(
                             id = n.id,
                             title = n.title.ifBlank { "Upline Sent a Notification" },
-                            message = n.message.ifBlank { "Update aktivitas proyek keagenan Anda." },
+                            message = n.message.ifBlank { "Update your agency project activity." },
                             date = formatDateDmy(n.createdAt, "-"),
                             isCheckIcon = n.type == "project_status"
                         )
@@ -378,7 +378,7 @@ private fun DownlineHomeRoute(
                         DownlineNotificationItemUi(
                             id = -t.id,
                             title = t.title.ifBlank { "Client Wants to meet" },
-                            message = "Jadwal tindak lanjut (Follow-Up) proyek.",
+                            message = "Project follow-up schedule.",
                             date = formatDateDmy(t.dueAt, "-"),
                             isCheckIcon = true
                         )
@@ -1066,10 +1066,10 @@ private fun DownlineNewProposalRoute(
             val offerVal = firstOfferStr.replace(",", "").replace("$", "").trim().toDoubleOrNull() ?: 0.0
             when {
                 clientName.isBlank() -> {
-                    Toast.makeText(context, "Client's Name wajib diisi", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Client name is required", Toast.LENGTH_SHORT).show()
                 }
                 offerVal <= 0.0 -> {
-                    Toast.makeText(context, "Product's First offer harus lebih dari 0", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "The initial product offer must be greater than 0", Toast.LENGTH_SHORT).show()
                 }
                 else -> {
                     submitting = true
@@ -1100,7 +1100,7 @@ private fun DownlineNewProposalRoute(
                             } else {
                                 Toast.makeText(
                                     context,
-                                    err.message ?: "Gagal membuat proposal deal",
+                                    err.message ?: "Failed to create deal proposal",
                                     Toast.LENGTH_LONG
                                 ).show()
                             }
@@ -1309,7 +1309,7 @@ private fun DownlineNotificationsDialog(
                 if (loading) {
                     CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
                 } else if (list.isEmpty()) {
-                    Text("Tidak ada notifikasi baru.", fontSize = 13.sp, color = Color.Gray)
+                    Text("No new notifications.", fontSize = 13.sp, color = Color.Gray)
                 } else {
                     list.forEach { n ->
                         Column(

@@ -157,14 +157,14 @@ fun IntegraAdminHomeV2(
                                 )
                                 Spacer(Modifier.height(8.dp))
                                 Text(
-                                    "Halo, $userFirstName!",
+                                    "Hello, $userFirstName!",
                                     color = Color.White,
                                     fontSize = 25.sp,
                                     fontWeight = FontWeight.ExtraBold
                                 )
                                 Spacer(Modifier.height(5.dp))
                                 Text(
-                                    "Pantau performa tim dan aktivitas proyek dalam satu tempat.",
+                                    "Track team performance and project activity in one place.",
                                     color = Color.White.copy(alpha = 0.86f),
                                     fontSize = 13.sp,
                                     lineHeight = 19.sp
@@ -175,7 +175,7 @@ fun IntegraAdminHomeV2(
                 }
 
                 item {
-                    Ad2SectionTitle("Business Overview", "Ringkasan aktivitas Integra Agency")
+                    Ad2SectionTitle("Business Overview", "Integra Agency activity summary")
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
                         Ad2MetricCard(
@@ -214,7 +214,7 @@ fun IntegraAdminHomeV2(
 
                 item {
                     Ad2Card {
-                        Ad2SectionTitle("Quick Actions", "Akses semua modul Admin")
+                        Ad2SectionTitle("Quick Actions", "Access all Admin modules")
                         Spacer(Modifier.height(18.dp))
                         adminV2Shortcuts.chunked(4).forEachIndexed { index, rowShortcuts ->
                             Row(
@@ -233,11 +233,11 @@ fun IntegraAdminHomeV2(
                 }
 
                 item {
-                    Ad2SectionTitle("Recent Activity", "Notifikasi terbaru dari tim")
+                    Ad2SectionTitle("Recent Activity", "Latest team notifications")
                     Spacer(Modifier.height(11.dp))
                     Ad2Card {
                         if (notifications.isEmpty()) {
-                            Ad2EmptyState("Belum ada notifikasi terbaru.")
+                            Ad2EmptyState("No recent notifications.")
                         } else {
                             notifications.take(4).forEachIndexed { index, notification ->
                                 Ad2NotificationRow(notification) {
@@ -252,11 +252,11 @@ fun IntegraAdminHomeV2(
                 }
 
                 item {
-                    Ad2SectionTitle("Recent Projects", "Project terbaru yang tercatat")
+                    Ad2SectionTitle("Recent Projects", "Recently recorded projects")
                     Spacer(Modifier.height(11.dp))
                     Ad2Card {
                         if (recentProjects.isEmpty()) {
-                            Ad2EmptyState("Belum ada project terbaru.")
+                            Ad2EmptyState("No recent projects.")
                         } else {
                             recentProjects.take(3).forEachIndexed { index, project ->
                                 Ad2ProjectRow(project) {
@@ -290,7 +290,7 @@ fun IntegraAdminHomeV2(
             title = { Text(notification.title.ifBlank { "Notification" }, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(notification.message.ifBlank { "Tidak ada detail tambahan." })
+                    Text(notification.message.ifBlank { "No additional details." })
                     notification.createdAt?.let { date ->
                         Text("Date: ${date.take(10)}", color = Ad2Muted, fontSize = 12.sp)
                     }

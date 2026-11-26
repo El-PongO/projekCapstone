@@ -94,7 +94,7 @@ fun UplinePerformanceScreen(
                 if (it is ApiError && it.unauthorized) {
                     onExpired()
                 } else {
-                    error = it.message ?: "Gagal mengambil data"
+                    error = it.message ?: "Failed to retrieve data"
                 }
             }
         }
@@ -244,7 +244,7 @@ fun UplinePerformanceScreen(
                     )
 
                     TextButton(onClick = { refresh++ }) {
-                        Text("Coba lagi")
+                        Text("Try again")
                     }
 
                 } else {
@@ -342,7 +342,7 @@ fun UplinePerformanceScreen(
 
                             if (performance.sales.isEmpty()) {
                                 Text(
-                                    "Belum ada penjualan.",
+                                    "No sales yet.",
                                     color = Color.Gray,
                                     fontSize = 13.sp
                                 )
@@ -382,7 +382,7 @@ fun UplinePerformanceScreen(
 
                             if (performance.income.isEmpty()) {
                                 Text(
-                                    "Belum ada komisi.",
+                                    "No commissions yet.",
                                     color = Color.Gray,
                                     fontSize = 13.sp
                                 )
@@ -448,7 +448,7 @@ fun UplinePerformanceScreen(
                         detailTitle = null
                     }
                 ) {
-                    Text("Tutup")
+                    Text("Close")
                 }
             }
         )

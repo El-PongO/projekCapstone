@@ -102,17 +102,17 @@ fun IntegraModernProfileScreen(
     if (showLogoutConfirmation) {
         AlertDialog(
             onDismissRequest = { showLogoutConfirmation = false },
-            title = { Text("Keluar dari akun?", fontWeight = FontWeight.Bold) },
-            text = { Text("Kamu perlu login kembali untuk mengakses Integra Agency.") },
+            title = { Text("Sign out?", fontWeight = FontWeight.Bold) },
+            text = { Text("You will need to sign in again to access Integra Agency.") },
             confirmButton = {
                 TextButton(onClick = {
                     showLogoutConfirmation = false
                     onLogout()
-                }) { Text("Ya, Logout", color = ProfRed, fontWeight = FontWeight.Bold) }
+                }) { Text("Yes, sign out", color = ProfRed, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutConfirmation = false }) {
-                    Text("Batal", color = ProfMuted)
+                    Text("Cancel", color = ProfMuted)
                 }
             },
             containerColor = Color.White,
@@ -161,7 +161,7 @@ fun IntegraModernProfileScreen(
                 ) {
                     Icon(
                         Icons.Default.ArrowBack,
-                        contentDescription = "Kembali",
+                        contentDescription = "Back",
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
@@ -169,7 +169,7 @@ fun IntegraModernProfileScreen(
                 Spacer(Modifier.width(14.dp))
                 Column {
                     Text("My Profile", color = ProfInk, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                    Text("Detail akun dan performa agent", color = ProfMuted, fontSize = 12.sp)
+                    Text("Account details and agent performance", color = ProfMuted, fontSize = 12.sp)
                 }
             }
 
@@ -191,7 +191,7 @@ fun IntegraModernProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text("Lihat Peringkat Agen", color = ProfBlue, fontWeight = FontWeight.SemiBold)
+                    Text("View Agent Leaderboard", color = ProfBlue, fontWeight = FontWeight.SemiBold)
                 }
 
                 if (loading) {
@@ -213,17 +213,17 @@ fun IntegraModernProfileScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "Data profile terbaru belum dapat dimuat.",
+                                "The latest profile data could not be loaded.",
                                 modifier = Modifier.weight(1f),
                                 color = ProfRed,
                                 fontSize = 12.sp
                             )
-                            TextButton(onClick = onReload) { Text("Coba lagi") }
+                            TextButton(onClick = onReload) { Text("Try again") }
                         }
                     }
                 }
 
-                ProfileSectionTitle("Informasi Akun", "Informasi yang terdaftar pada akun kamu")
+                ProfileSectionTitle("Account Information", "Information associated with your account")
                 Surface(
                     shape = ProfRadius,
                     color = Color.White,
@@ -239,7 +239,7 @@ fun IntegraModernProfileScreen(
                     }
                 }
 
-                ProfileSectionTitle("Performance Overview", "Ringkasan performa penjualan")
+                ProfileSectionTitle("Performance Overview", "Sales performance summary")
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -247,7 +247,7 @@ fun IntegraModernProfileScreen(
                     ProfileStatCard(
                         title = "Total Deals",
                         value = totalDeals.toString(),
-                        description = "Deals tercatat",
+                        description = "Recorded deals",
                         icon = Icons.Default.WorkOutline,
                         accent = ProfBlue,
                         modifier = Modifier.weight(1f)
@@ -277,7 +277,7 @@ fun IntegraModernProfileScreen(
                         Column {
                             Text("Integra Agency", color = ProfInk,
                                 fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                            Text("Manajemen keagenan dalam satu aplikasi",
+                            Text("Manage your agency in one app",
                                 color = ProfMuted, fontSize = 11.sp)
                         }
                     }
@@ -317,14 +317,14 @@ private fun ProfileModernTopBar(
         ) {
             Image(
                 painter = painterResource(R.drawable.logo_ict_textless),
-                contentDescription = "Logo Integra Agency",
+                contentDescription = "Integra Agency logo",
                 modifier = Modifier.size(37.dp)
             )
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text("Integra Agency", color = ProfInk,
                     fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
-                Text("Halo, ${userName.substringBefore(' ').ifBlank { "Agent" }}!",
+                Text("Hello, ${userName.substringBefore(' ').ifBlank { "Agent" }}!",
                     color = ProfMuted, fontSize = 11.sp, maxLines = 1)
             }
             Box(modifier = Modifier.size(44.dp), contentAlignment = Alignment.Center) {
@@ -332,7 +332,7 @@ private fun ProfileModernTopBar(
                     onClick = onNotificationClick,
                     modifier = Modifier.size(38.dp).background(ProfBackground, CircleShape)
                 ) {
-                    Icon(Icons.Default.Notifications, contentDescription = "Notifikasi",
+                    Icon(Icons.Default.Notifications, contentDescription = "Notifications",
                         tint = ProfInk, modifier = Modifier.size(21.dp))
                 }
                 if (unreadCount > 0) {
@@ -385,11 +385,11 @@ private fun ProfileHeroCard(name: String, code: String, role: String, isActive: 
                 }
                 Spacer(Modifier.width(15.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(name.ifBlank { "Agent Integra" }, color = Color.White,
+                    Text(name.ifBlank { "Integra Agent" }, color = Color.White,
                         fontSize = 21.sp, fontWeight = FontWeight.Bold,
                         maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Spacer(Modifier.height(5.dp))
-                    Text("Kode Agent: ${code.ifBlank { "-" }}",
+                    Text("Agent Code: ${code.ifBlank { "-" }}",
                         color = Color.White.copy(alpha = 0.84f), fontSize = 11.sp,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
@@ -398,7 +398,7 @@ private fun ProfileHeroCard(name: String, code: String, role: String, isActive: 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ProfileHeroChip(role.uppercase(), Color.White.copy(alpha = 0.15f))
                 ProfileHeroChip(
-                    if (isActive) "AKUN AKTIF" else "AKUN NONAKTIF",
+                    if (isActive) "ACTIVE ACCOUNT" else "INACTIVE ACCOUNT",
                     if (isActive) Color(0xFF169B5B) else Color(0xFFD75B45)
                 )
             }
@@ -448,7 +448,7 @@ private fun ProfileInfoItem(icon: ImageVector, title: String, value: String) {
         Column(modifier = Modifier.weight(1f)) {
             Text(title, color = ProfMuted, fontSize = 11.sp)
             Spacer(Modifier.height(3.dp))
-            Text(value.ifBlank { "Belum tersedia" },
+            Text(value.ifBlank { "Not available yet" },
                 color = ProfInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         }
     }

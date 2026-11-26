@@ -12,7 +12,7 @@ class IntegraFirebaseMessagingService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         if (token.isNotBlank()) {
-            Log.d("IntegraFCM", "Token FCM baru diterima (token tidak dicetak)")
+            Log.d("IntegraFCM", "New FCM token received (token value is not logged)")
             ApiService.registerRefreshedFcmToken(token)
         }
     }

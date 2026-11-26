@@ -22,13 +22,13 @@ fun IntegraLeaderboardDialog(token: String, onDismiss: () -> Unit) {
     LaunchedEffect(token) {
         if (token.isBlank()) {
             loading = false
-            error = "Silakan login kembali"
+            error = "Please sign in again"
         } else {
             try {
                 val payload = App.retrofitService.getLeaderboard("Bearer $token")
                 entries = payload.ranking
             } catch (e: Exception) {
-                error = e.message ?: "Gagal memuat leaderboard"
+                error = e.message ?: "Failed to load the leaderboard"
             } finally {
                 loading = false
             }
@@ -37,14 +37,14 @@ fun IntegraLeaderboardDialog(token: String, onDismiss: () -> Unit) {
     val number = remember { NumberFormat.getNumberInstance(Locale.forLanguageTag("id-ID")) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Peringkat Agen", fontWeight = FontWeight.Bold) },
+        title = { Text("Agent Leaderboard", fontWeight = FontWeight.Bold) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text("Berdasarkan nilai Deal. Identitas Downline dirahasiakan.", style = MaterialTheme.typography.bodySmall)
+                Text("Ranked by deal value. Downline identities are kept private.", style = MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.height(12.dp))
                 if (loading) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 if (error != null) Text(error!!, color = MaterialTheme.colorScheme.error)
-                if (!loading && error == null && entries.isEmpty()) Text("Belum ada transaksi Deal.")
+                if (!loading && error == null && entries.isEmpty()) Text("No deal transactions yet.")
                 LazyColumn(modifier = Modifier.heightIn(max = 380.dp)) {
                     items(entries) { entry ->
                         Card(
@@ -65,7 +65,7 @@ fun IntegraLeaderboardDialog(token: String, onDismiss: () -> Unit) {
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Tutup") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
         containerColor = Color.White
     )
 }

@@ -37,8 +37,8 @@ object ApiService {
     private fun isAnonymizedOrCode(name: String?): Boolean {
         if (name.isNullOrBlank()) return true
         val trimmed = name.trim()
-        if (trimmed.startsWith("Proyek ", ignoreCase = true)) return true
-        if (trimmed.startsWith("Komisi Tim", ignoreCase = true)) return true
+        if (trimmed.startsWith("Project ", ignoreCase = true)) return true
+        if (trimmed.startsWith("Team Commission", ignoreCase = true)) return true
         if (trimmed.matches(Regex("^(DNL|UPL|ADM)-\\d+.*", RegexOption.IGNORE_CASE))) return true
         return false
     }
@@ -69,7 +69,7 @@ object ApiService {
     ): String {
         // Jangan menggunakan cache dari akun yang login sebelumnya untuk memulihkan data privat.
         if (!rawClientName.isNullOrBlank()) return rawClientName
-        return "Proyek ${projectCode ?: agentCode ?: projectId}"
+        return "Project ${projectCode ?: agentCode ?: projectId}"
     }
 
     private fun candidateTokens(primaryToken: String): List<String> = listOf(primaryToken)
@@ -81,7 +81,7 @@ object ApiService {
                 ?.ifBlank { null } ?: "HTTP ${error.code()}"
             return ApiError(message, unauthorized = error.code() == 401)
         }
-        return ApiError(error.message ?: "Koneksi gagal")
+        return ApiError(error.message ?: "Connection failed")
     }
 
     private val sentFcmTokens = java.util.concurrent.ConcurrentHashMap<String, String>()
@@ -102,9 +102,9 @@ object ApiService {
                 )
             }.onSuccess {
                 sentFcmTokens[jwt] = fcmToken
-                Log.d("IntegraFCM", "Token perangkat terdaftar pada backend")
+                Log.d("IntegraFCM", "Device token registered with the backend")
             }.onFailure { error ->
-                Log.e("IntegraFCM", "Gagal mendaftarkan token: ${error.message}")
+                Log.e("IntegraFCM", "Failed to register token: ${error.message}")
             }
         }
     }
@@ -126,7 +126,7 @@ object ApiService {
                     "Bearer $jwt", RegisterDeviceTokenRequest(fcmToken = "")
                 )
             }.onFailure { error ->
-                Log.w("IntegraFCM", "Gagal unregister perangkat: ${error.message}")
+                Log.w("IntegraFCM", "Failed to unregister device: ${error.message}")
             }
             PushNotificationHelper.deleteLocalFcmToken(ctx)
         }
@@ -651,7 +651,7 @@ object ApiService {
                 val prodName = matchedItem?.itemName ?: fallbackProduct
                 val detailDesc = detail.activities.firstOrNull()?.activityDescription
                     ?: matchedItem?.description
-                    ?: "Implementasi dan pengembangan paket solusi proyek keagenan sesuai penawaran klien."
+                    ?: "Implementation and development of the agency project solution package based on the client proposal."
 
                 val resolvedClient = resolveClientName(
                     rawClientName = p.clientName.ifBlank { fallbackClientName },
@@ -1220,7 +1220,7 @@ object ApiService {
             val result = try {
                 val detail = App.retrofitService.getInvoiceDetail("Bearer $token", invoiceId)
                 val remaining = kotlin.math.round((detail.invoice.totalAmount - detail.paidAmount) * 100) / 100
-                if (remaining <= 0.0) throw IllegalStateException("Invoice sudah lunas")
+                if (remaining <= 0.0) throw IllegalStateException("Invoice is already paid")
                 App.retrofitService.createPayment("Bearer $token",
                     CreatePaymentRequest(invoiceId = invoiceId, amountPaid = remaining))
                 Result.success(true)
@@ -1235,9 +1235,9 @@ object ApiService {
             val result = try {
                 val detail = App.retrofitService.getCommissionDetail("Bearer $token", commissionId)
                 if (detail.commission.payoutStatus != "approved")
-                    throw IllegalStateException("Komisi belum approved atau sudah paid")
+                    throw IllegalStateException("Commission is not approved or has already been paid")
                 val remaining = kotlin.math.round((detail.commission.totalCommissionAmount - detail.paidAmount) * 100) / 100
-                if (remaining <= 0.0) throw IllegalStateException("Komisi sudah lunas")
+                if (remaining <= 0.0) throw IllegalStateException("Commission is already paid")
                 App.retrofitService.createCommissionPayout("Bearer $token",
                     CreatePayoutRequest(commissionId = commissionId, amountPaid = remaining))
                 Result.success(true)
