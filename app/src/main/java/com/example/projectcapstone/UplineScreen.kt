@@ -1,5 +1,7 @@
 package com.example.projectcapstone
 
+import androidx.compose.ui.zIndex
+
 // Sesuaikan package dengan package project kamu
 
 import androidx.compose.foundation.background
@@ -11,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -625,113 +628,16 @@ private fun DownlineActivityCard(
 private fun UplineBottomNavigation(
     onMenuClick: (String) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(72.dp)
-            .background(PrimaryBlue)
-            .padding(horizontal = 5.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-
-        BottomMenuItem(
-            title = "Home",
-            type = "home",
-            modifier = Modifier.weight(1f)
-        ) {
-            onMenuClick("home")
-        }
-
-        BottomMenuItem(
-            title = "addproject",
-            type = "add",
-            modifier = Modifier.weight(1f)
-        ) {
-            onMenuClick("add_project")
-        }
-
-        BottomMenuItem(
-            title = "Earnings",
-            type = "money",
-            modifier = Modifier.weight(1f)
-        ) {
-            onMenuClick("earnings")
-        }
-
-        BottomMenuItem(
-            title = "profile",
-            type = "profile",
-            modifier = Modifier.weight(1f)
-        ) {
-            onMenuClick("profile")
-        }
-    }
-}
-
-@Composable
-private fun BottomMenuItem(
-    title: String,
-    type: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Column(
-        modifier = modifier
-            .fillMaxHeight()
-            .clickable { onClick() },
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-
-        if (type == "add") {
-            Box(
-                modifier = Modifier
-                    .size(45.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF0048EE)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Project",
-                    tint = Color.White,
-                    modifier = Modifier.size(27.dp)
-                )
-            }
-        } else {
-            when (type) {
-                "home" -> Icon(
-                    imageVector = Icons.Default.Home,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(25.dp)
-                )
-
-                "profile" -> Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(25.dp)
-                )
-
-                "money" -> Text(
-                    text = "$",
-                    color = Color.White,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(2.dp))
-
-        Text(
-            text = title,
-            color = Color.White,
-            fontSize = 10.sp,
-            maxLines = 1,
-            textAlign = TextAlign.Center
-        )
-    }
+    AppBottomBar(
+        items = listOf(
+            AppBottomNavItem("Home", Icons.Default.Home, selected = true) { onMenuClick("home") },
+            AppBottomNavItem("Earnings", Icons.Default.AttachMoney) { onMenuClick("earnings") },
+            AppBottomNavItem("Profile", Icons.Default.Person) { onMenuClick("profile") }
+        ),
+        centerAction = AppBottomNavItem("Add Project", Icons.Default.Add) { onMenuClick("add_project") },
+        backgroundColor = PrimaryBlue,
+        selectedColor = Color.White,
+        unselectedColor = Color.White,
+        centerColor = Color(0xFF0048EE)
+    )
 }

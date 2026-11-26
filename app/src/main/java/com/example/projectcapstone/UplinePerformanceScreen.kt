@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -131,7 +132,7 @@ fun UplinePerformanceScreen(
             ) {
 
                 Image(
-                    painter = painterResource(R.drawable.logo_ict),
+                    painter = painterResource(R.drawable.logo_ict_textless),
                     contentDescription = "Logo Integra",
                     modifier = Modifier.size(39.dp)
                 )
@@ -622,93 +623,16 @@ private fun PerformanceBottomBar(
     onEarnings: () -> Unit,
     onProfile: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(70.dp)
-            .background(PerformanceBlue),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-
-        PerformanceBottomItem(
-            title = "Home",
-            icon = Icons.Default.Home,
-            modifier = Modifier.weight(1f),
-            onClick = onHome
-        )
-
-        PerformanceBottomItem(
-            title = "add project",
-            icon = Icons.Default.Add,
-            modifier = Modifier.weight(1f),
-            onClick = onAddProject
-        )
-
-        PerformanceBottomItem(
-            title = "Earnings",
-            icon = Icons.Default.AttachMoney,
-            modifier = Modifier.weight(1f),
-            onClick = onEarnings
-        )
-
-        PerformanceBottomItem(
-            title = "profile",
-            icon = Icons.Default.Person,
-            modifier = Modifier.weight(1f),
-            onClick = onProfile
-        )
-    }
-}
-
-@Composable
-private fun PerformanceBottomItem(
-    title: String,
-    icon: ImageVector,
-    modifier: Modifier,
-    onClick: () -> Unit
-) {
-    Column(
-        modifier = modifier
-            .clickable { onClick() },
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-
-        if (title == "add project") {
-
-            Box(
-                modifier = Modifier
-                    .size(43.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF0045E8)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    icon,
-                    contentDescription = title,
-                    tint = Color.White,
-                    modifier = Modifier.size(27.dp)
-                )
-            }
-
-        } else {
-
-            Icon(
-                icon,
-                contentDescription = title,
-                tint = Color.White,
-                modifier = Modifier.size(23.dp)
-            )
-        }
-
-        Spacer(Modifier.height(3.dp))
-
-        Text(
-            text = title,
-            color = Color.White,
-            fontSize = 10.sp,
-            textAlign = TextAlign.Center
-        )
-    }
+    AppBottomBar(
+        items = listOf(
+            AppBottomNavItem("Home", Icons.Default.Home, onClick = onHome),
+            AppBottomNavItem("Earnings", Icons.Default.AttachMoney, selected = true, onClick = onEarnings),
+            AppBottomNavItem("Profile", Icons.Default.Person, onClick = onProfile)
+        ),
+        centerAction = AppBottomNavItem("Add Project", Icons.Default.Add, onClick = onAddProject),
+        backgroundColor = PerformanceBlue,
+        selectedColor = Color.White,
+        unselectedColor = Color.White,
+        centerColor = Color(0xFF0045E8)
+    )
 }

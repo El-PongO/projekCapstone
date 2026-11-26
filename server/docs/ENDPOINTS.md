@@ -250,6 +250,31 @@ Sepuluh nilai `type`:
 9. `project-category`
 10. `revenue-forecast` (estimasi sederhana)
 
+Semua endpoint laporan hanya untuk Admin. Parameter opsional `from` dan `to` menggunakan
+format `YYYY-MM-DD` dan batas tanggal inklusif. JSON mengembalikan `type`, `title`,
+`period`, `count`, `columns` (pasangan `key` dan `label` sesuai urutan tampilan),
+`data`, dan `summary` (ringkasan kosong untuk laporan tanpa total). Kolom tetap
+tersedia meskipun data kosong. PDF dan Excel menampilkan tabel dengan judul kolom;
+ringkasan juga disertakan dalam PDF dan lembar `Ringkasan` pada Excel jika tersedia.
+
+Periode memakai tanggal pembuatan proyek untuk performa, konversi, hierarki proyek,
+kategori, dan pipeline; tanggal Deal untuk ringkasan Deal dan bagi hasil; tanggal
+pembayaran untuk histori pembayaran; tanggal jatuh tempo invoice untuk piutang; dan
+tanggal pembaruan proyek untuk pembatalan. Komisi pada laporan hierarki menggunakan
+tanggal pembuatan komisi. Perubahan data proyek setelah pembatalan dapat mengubah
+periode pembatalannya.
+
+Laporan bagi hasil menggunakan nilai dan rate komisi yang tersimpan saat Deal, bukan
+rate profil agen saat ini. Bagian PT adalah nilai Deal dikurangi seluruh komisi
+tercatat, termasuk komisi upline eksternal untuk proyek agen internal. Piutang adalah
+sisa **invoice** pada hari ini (WIB), setelah pembayaran sampai hari ini; nilai proyek
+yang belum dibuatkan invoice tidak termasuk. Filter tanggal piutang membatasi tanggal
+jatuh tempo, bukan tanggal snapshot. Kategori menampilkan jumlah proyek dan jumlah
+Deal; `line_value` adalah nilai item pada proyek Deal, bukan alokasi nilai Deal.
+Pipeline memakai nilai proyek Follow Up saat ini dan estimasi ilustratif berdasarkan
+rasio Deal terhadap seluruh proyek dalam periode yang sama; tidak ada prediksi tanggal
+realisasi. Ekspor beberapa laporan di aplikasi menghasilkan satu file per laporan.
+
 ## Contoh pengujian cepat PowerShell
 
 ```powershell

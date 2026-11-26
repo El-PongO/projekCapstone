@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.BorderStroke
 
 // UI profile modern. Data & API tetap dikelola oleh GlobalProfileRoute().
@@ -173,7 +174,7 @@ fun IntegraModernProfileScreen(
             }
 
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.weight(1f).fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 18.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -315,7 +316,7 @@ private fun ProfileModernTopBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = painterResource(R.drawable.logo_ict),
+                painter = painterResource(R.drawable.logo_ict_textless),
                 contentDescription = "Logo Integra Agency",
                 modifier = Modifier.size(37.dp)
             )
@@ -494,42 +495,16 @@ private fun ProfileModernBottomBar(
     onHome: () -> Unit,
     onAddProject: () -> Unit
 ) {
-    Surface(color = Color.White, shadowElevation = 7.dp) {
-        Row(
-            modifier = Modifier.fillMaxWidth().navigationBarsPadding().height(74.dp)
-                .padding(horizontal = 18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(
-                modifier = Modifier.weight(1f).clickable { onHome() },
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(Icons.Default.Home, contentDescription = "Home", tint = ProfMuted,
-                    modifier = Modifier.size(23.dp))
-                Text("Home", color = ProfMuted, fontSize = 11.sp)
-            }
-            Column(
-                modifier = Modifier.weight(1f).clickable { onAddProject() },
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
-                    modifier = Modifier.size(47.dp)
-                        .background(ProfBlue, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Project",
-                        tint = Color.White, modifier = Modifier.size(26.dp))
-                }
-                Spacer(Modifier.height(2.dp))
-                Text(centerBarLabel.replaceFirstChar { it.uppercase() },
-                    color = ProfInk, fontSize = 10.sp, maxLines = 1)
-            }
-            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.Person, contentDescription = "Profile", tint = ProfBlue,
-                    modifier = Modifier.size(23.dp))
-                Text("Profile", color = ProfBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            }
-        }
-    }
+    AppBottomBar(
+        items = listOf(
+            AppBottomNavItem("Home", Icons.Default.Home, onClick = onHome),
+            AppBottomNavItem("Profile", Icons.Default.Person, selected = true, onClick = {})
+        ),
+        centerAction = AppBottomNavItem(
+            centerBarLabel.replaceFirstChar { it.uppercase() },
+            Icons.Default.Add,
+            onClick = onAddProject
+        ),
+        selectedColor = ProfBlue
+    )
 }

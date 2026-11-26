@@ -1,5 +1,7 @@
 package com.example.projectcapstone
 
+import androidx.compose.ui.zIndex
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -113,12 +115,14 @@ fun UplineDownlinesScreen(
     Scaffold(
         containerColor = TeamSkyBlue,
         bottomBar = {
-            TeamBottomBar(
-                onHome = onBack,
-                onAddProject = onAddProject,
-                onEarnings = onEarnings,
-                onProfile = onProfile
-            )
+            Box(modifier = Modifier.fillMaxWidth().zIndex(1f)) {
+                TeamBottomBar(
+                    onHome = onBack,
+                    onAddProject = onAddProject,
+                    onEarnings = onEarnings,
+                    onProfile = onProfile
+                )
+            }
         }
     ) { innerPadding ->
 
@@ -138,7 +142,7 @@ fun UplineDownlinesScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(R.drawable.logo_ict),
+                    painter = painterResource(R.drawable.logo_ict_textless),
                     contentDescription = "Integra Logo",
                     modifier = Modifier.size(42.dp),
                     contentScale = ContentScale.Fit
@@ -217,7 +221,8 @@ fun UplineDownlinesScreen(
             // White main content
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .weight(1f)
+                    .fillMaxWidth()
                     .clip(
                         RoundedCornerShape(
                             topStart = 28.dp,
@@ -693,83 +698,16 @@ private fun TeamBottomBar(
     onEarnings: () -> Unit,
     onProfile: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(70.dp)
-            .background(TeamBlue),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        TeamBottomItem(
-            label = "Home",
-            onClick = onHome
-        ) {
-            Icon(Icons.Default.Home, null, tint = Color.White)
-        }
-
-        TeamBottomItem(
-            label = "add project",
-            onClick = onAddProject
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF0046DD)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    null,
-                    tint = Color.White
-                )
-            }
-        }
-
-        TeamBottomItem(
-            label = "Earnings",
-            onClick = onEarnings
-        ) {
-            Icon(
-                Icons.Default.AttachMoney,
-                null,
-                tint = Color.White
-            )
-        }
-
-        TeamBottomItem(
-            label = "profile",
-            onClick = onProfile
-        ) {
-            Icon(
-                Icons.Default.Person,
-                null,
-                tint = Color.White
-            )
-        }
-    }
-}
-
-@Composable
-private fun RowScope.TeamBottomItem(
-    label: String,
-    onClick: () -> Unit,
-    icon: @Composable () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .weight(1f)
-            .clickable { onClick() },
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        icon()
-
-        Text(
-            label,
-            color = Color.White,
-            fontSize = 10.sp,
-            maxLines = 1
-        )
-    }
+    AppBottomBar(
+        items = listOf(
+            AppBottomNavItem("Home", Icons.Default.Home, onClick = onHome),
+            AppBottomNavItem("Earnings", Icons.Default.AttachMoney, onClick = onEarnings),
+            AppBottomNavItem("Profile", Icons.Default.Person, onClick = onProfile)
+        ),
+        centerAction = AppBottomNavItem("Add Project", Icons.Default.Add, onClick = onAddProject),
+        backgroundColor = TeamBlue,
+        selectedColor = Color.White,
+        unselectedColor = Color.White,
+        centerColor = Color(0xFF0046DD)
+    )
 }

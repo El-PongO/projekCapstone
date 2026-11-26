@@ -34,7 +34,7 @@ npm run seed
 npm run dev
 ```
 
-7. Test lewat browser: `http://127.0.0.1:3000/api/health`, lalu `http://127.0.0.1:3000/api/health/db`.
+7. Test lewat browser: `http://127.0.0.1:3001/api/health`, lalu `http://127.0.0.1:3001/api/health/db`.
 
 ## Integrasi Android (Kotlin + Jetpack Compose)
 

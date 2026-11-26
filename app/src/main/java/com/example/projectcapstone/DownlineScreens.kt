@@ -29,6 +29,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -267,102 +268,14 @@ fun DownlineBottomBar(
     onCreateProposal: () -> Unit,
     onProfile: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(74.dp),
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        // White bottom bar background
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .background(Color.White)
-                .border(width = 0.5.dp, color = Color(0xFFBDBDBD))
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Left: Home
-            Column(
-                modifier = Modifier
-                    .width(72.dp)
-                    .clickable { onHome() },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Home,
-                    contentDescription = "Home",
-                    tint = Color.Black,
-                    modifier = Modifier.size(22.dp)
-                )
-                Text(
-                    text = "Home",
-                    color = Color.Black,
-                    fontSize = 10.sp
-                )
-            }
-
-            // Middle spacer for label below floating button
-            Column(
-                modifier = Modifier
-                    .width(110.dp)
-                    .clickable { onCreateProposal() },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Bottom
-            ) {
-                Spacer(modifier = Modifier.height(26.dp))
-                Text(
-                    text = "Create Proposal",
-                    color = Color.Black,
-                    fontSize = 10.sp,
-                    maxLines = 1
-                )
-            }
-
-            // Right: profile
-            Column(
-                modifier = Modifier
-                    .width(72.dp)
-                    .clickable { onProfile() },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Person,
-                    contentDescription = "profile",
-                    tint = Color.Black,
-                    modifier = Modifier.size(22.dp)
-                )
-                Text(
-                    text = "profile",
-                    color = Color.Black,
-                    fontSize = 10.sp
-                )
-            }
-        }
-
-        // Protruding center blue + button
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = 2.dp)
-                .size(46.dp)
-                .clip(CircleShape)
-                .background(PrimaryBlue)
-                .clickable { onCreateProposal() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Create Proposal",
-                tint = Color.White,
-                modifier = Modifier.size(26.dp)
-            )
-        }
-    }
+    AppBottomBar(
+        items = listOf(
+            AppBottomNavItem("Home", Icons.Outlined.Home, onClick = onHome),
+            AppBottomNavItem("Profile", Icons.Outlined.Person, onClick = onProfile)
+        ),
+        centerAction = AppBottomNavItem("Create Proposal", Icons.Default.Add, onClick = onCreateProposal),
+        selectedColor = PrimaryBlue
+    )
 }
 
 /**

@@ -482,9 +482,13 @@ data class ApprovalReviewRequest(
     val reason: String? = null
 )
 
+data class ReportColumnDto(val key: String, val label: String)
+
 data class ReportResponseDto(
     val type: String = "",
     val count: Int = 0,
+    val columns: List<ReportColumnDto> = emptyList(),
+    val summary: Map<String, Any?> = emptyMap(),
     val data: List<Map<String, Any?>> = emptyList()
 )
 

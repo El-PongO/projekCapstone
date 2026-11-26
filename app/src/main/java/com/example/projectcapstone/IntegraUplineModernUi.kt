@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 
 // UI-only components. API, data, and navigation are still managed by UplineScreensNew.kt.
 private val Ink = Color(0xFF121A32)
@@ -81,7 +82,7 @@ private fun ModernHeader(userName: String, pageTitle: String?, onBack: () -> Uni
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = painterResource(R.drawable.logo_ict),
+                painter = painterResource(R.drawable.logo_ict_textless),
                 contentDescription = "Integra Agency",
                 modifier = Modifier.size(34.dp)
             )
@@ -124,46 +125,21 @@ private fun ModernNavBar(
     active: String = "home",
     centerEnabled: Boolean = true
 ) {
-    Surface(shadowElevation = 8.dp, color = Color.White) {
-        Row(
-            Modifier.fillMaxWidth().navigationBarsPadding().height(74.dp)
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                Modifier.weight(1f).clickable { onHome() },
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(Icons.Default.Home, contentDescription = "Home",
-                    tint = if (active == "home") Primary else Muted, modifier = Modifier.size(23.dp))
-                Text("Home", color = if (active == "home") Primary else Muted, fontSize = 11.sp)
-            }
-            Column(
-                Modifier.weight(1f).clickable(enabled = centerEnabled) { onAddProject() },
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
-                    Modifier.size(48.dp)
-                        .background(Brush.linearGradient(listOf(Primary, Color(0xFF327EFF))), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Project",
-                        tint = Color.White, modifier = Modifier.size(28.dp))
-                }
-                Spacer(Modifier.height(2.dp))
-                Text("Add Project", color = Ink, fontSize = 10.sp)
-            }
-            Column(
-                Modifier.weight(1f).clickable { onProfile() },
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(Icons.Default.Person, contentDescription = "Profile",
-                    tint = if (active == "profile") Primary else Muted, modifier = Modifier.size(23.dp))
-                Text("Profile", color = if (active == "profile") Primary else Muted, fontSize = 11.sp)
-            }
-        }
-    }
+    AppBottomBar(
+        items = listOf(
+            AppBottomNavItem("Home", Icons.Default.Home, selected = active == "home", onClick = onHome),
+            AppBottomNavItem("Profile", Icons.Default.Person, selected = active == "profile", onClick = onProfile)
+        ),
+        centerAction = AppBottomNavItem(
+            "Add Project",
+            Icons.Default.Add,
+            selected = active == "add",
+            onClick = { if (centerEnabled) onAddProject() }
+        ),
+        selectedColor = Primary,
+        unselectedColor = Muted,
+        centerColor = Primary
+    )
 }
 
 @Composable
@@ -190,7 +166,7 @@ private fun ModernPage(
         Column(Modifier.fillMaxSize().padding(padding)) {
             ModernHeader(userName, title, onBack)
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 18.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 content = content

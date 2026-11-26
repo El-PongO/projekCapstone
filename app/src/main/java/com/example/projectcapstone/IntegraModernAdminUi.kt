@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Groups
@@ -121,10 +122,12 @@ private fun ModernStatCard(title: String, value: String, accent: Color, icon: Im
         shadowElevation = 4.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Box(
                 modifier = Modifier
-                    .padding(start = 10.dp, top = 10.dp)
                     .size(36.dp)
                     .clip(CircleShape)
                     .background(accent.copy(alpha = 0.12f)),
@@ -132,11 +135,8 @@ private fun ModernStatCard(title: String, value: String, accent: Color, icon: Im
             ) {
                 Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
             }
-            Column(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(title, color = AdminModernTextMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                Text(value, color = Color.Black, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
-            }
+            Text(title, color = AdminModernTextMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            Text(value, color = Color.Black, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
         }
     }
 }
@@ -171,7 +171,7 @@ fun IntegraModernAdminHomeScreen(
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).background(AdminModernBg)) {
             RoleTopBar(roleTitle = "Admin", userName = userName, onNotificationClick = { onNavigate(AdminPage.BROADCAST) })
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
@@ -207,6 +207,9 @@ fun IntegraModernAdminHomeScreen(
                                     Triple("Projects", Icons.Default.Workspaces, AdminPage.MASTER_PROJECT),
                                     Triple("Master Item", Icons.Default.Inventory2, AdminPage.MASTER_ITEM),
                                     Triple("Reports", Icons.Default.Campaign, AdminPage.DEALS_REPORTS)
+                                ),
+                                listOf(
+                                    Triple("Export Reports", Icons.Default.Download, AdminPage.EXPORT_REPORTS)
                                 )
                             ).forEach { rowItems ->
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -374,7 +377,7 @@ fun IntegraModernAdminAgentListScreen(
                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White) }
                 }
             })
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Column(modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = onSearchChange,
@@ -433,7 +436,7 @@ fun IntegraModernAdminUserDetailsScreen(
             RoleTopBar(roleTitle = "Admin", userName = userName)
             ModernAdminPageTitle(title = "Master User Details", onBack = onBack)
             Column(
-                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 ModernSectionCard(title = agent.name, subtitle = "Agent code: ${agent.agentCode}") {
@@ -564,7 +567,7 @@ fun IntegraModernAdminMasterItemScreen(
                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White) }
                 }
             })
-            Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 6.dp)) {
+            Column(modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
                 Surface(shape = RoundedCornerShape(24.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.dp, AdminModernBorder), shadowElevation = 4.dp, modifier = Modifier.fillMaxSize()) {
                     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

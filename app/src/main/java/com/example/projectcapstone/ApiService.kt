@@ -1300,13 +1300,16 @@ object ApiService {
             }
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
                 ?: throw IOException("Failed to create file in Downloads")
-            resolver.openOutputStream(uri)?.use { out ->
-                out.write(bytes)
-                out.flush()
+            try {
+                val stream = resolver.openOutputStream(uri) ?: throw IOException("Failed to open file in Downloads")
+                stream.use { out -> out.write(bytes) }
+                values.clear()
+                values.put(MediaStore.Downloads.IS_PENDING, 0)
+                if (resolver.update(uri, values, null, null) != 1) throw IOException("Failed to publish file in Downloads")
+            } catch (error: Exception) {
+                resolver.delete(uri, null, null)
+                throw error
             }
-            values.clear()
-            values.put(MediaStore.Downloads.IS_PENDING, 0)
-            resolver.update(uri, values, null, null)
             return "Downloads/$fileName"
         } else {
             val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir

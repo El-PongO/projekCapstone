@@ -306,7 +306,7 @@ private fun LoginScreen(onLogin: (String, String, (Result<LoginSession>) -> Unit
         ) {
             Spacer(Modifier.height(18.dp))
             Image(
-                painter = painterResource(R.drawable.logo_ict),
+                painter = painterResource(R.drawable.logo_ict_textless),
                 contentDescription = "Logo Integradata Cipta Tech",
                 modifier = Modifier.width(250.dp).height(74.dp),
                 contentScale = ContentScale.Fit

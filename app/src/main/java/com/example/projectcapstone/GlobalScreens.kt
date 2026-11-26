@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -92,22 +93,12 @@ fun RoleTopBar(
                 .height(58.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.logo_ict),
-                    contentDescription = "Integra Logo",
-                    modifier = Modifier
-                        .requiredWidth(115.dp)
-                        .height(34.dp),
-                    alignment = Alignment.CenterStart,
-                    contentScale = ContentScale.Fit
-                )
-            }
+            Image(
+                painter = painterResource(R.drawable.logo_ict_textless),
+                contentDescription = "Integra Logo",
+                modifier = Modifier.size(38.dp),
+                contentScale = ContentScale.Fit
+            )
 
             Spacer(modifier = Modifier.width(10.dp))
 
@@ -438,97 +429,14 @@ fun RoleBottomBar(
     onCenterClick: () -> Unit,
     onProfile: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(74.dp),
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .background(Color.White)
-                .border(width = 0.5.dp, color = Color(0xFFBDBDBD))
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier
-                    .width(72.dp)
-                    .clickable { onHome() },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Home,
-                    contentDescription = "Home",
-                    tint = Color.Black,
-                    modifier = Modifier.size(22.dp)
-                )
-                Text(
-                    text = "Home",
-                    color = Color.Black,
-                    fontSize = 10.sp
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .width(110.dp)
-                    .clickable { onCenterClick() },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Bottom
-            ) {
-                Spacer(modifier = Modifier.height(26.dp))
-                Text(
-                    text = centerLabel,
-                    color = Color.Black,
-                    fontSize = 10.sp,
-                    maxLines = 1
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .width(72.dp)
-                    .clickable { onProfile() },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Person,
-                    contentDescription = "profile",
-                    tint = Color.Black,
-                    modifier = Modifier.size(22.dp)
-                )
-                Text(
-                    text = "profile",
-                    color = Color.Black,
-                    fontSize = 10.sp
-                )
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = 2.dp)
-                .size(46.dp)
-                .clip(CircleShape)
-                .background(GlobalPrimaryBlue)
-                .clickable { onCenterClick() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = centerLabel,
-                tint = Color.White,
-                modifier = Modifier.size(26.dp)
-            )
-        }
-    }
+    AppBottomBar(
+        items = listOf(
+            AppBottomNavItem("Home", Icons.Outlined.Home, onClick = onHome),
+            AppBottomNavItem("Profile", Icons.Outlined.Person, onClick = onProfile)
+        ),
+        centerAction = AppBottomNavItem(centerLabel, Icons.Default.Add, onClick = onCenterClick),
+        selectedColor = GlobalPrimaryBlue
+    )
 }
 
 // ==========================================

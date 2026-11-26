@@ -1,9 +1,12 @@
 package com.example.projectcapstone
 
+import androidx.compose.ui.zIndex
+
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -342,87 +345,22 @@ fun AdminBottomBar(
     currentPage: AdminPage = AdminPage.HOME,
     onNavigate: (AdminPage) -> Unit = {}
 ) {
-    val navColors = NavigationBarItemDefaults.colors(
-        selectedIconColor = AdminPrimaryBlue,
-        selectedTextColor = AdminPrimaryBlue,
-        unselectedIconColor = Color(0xFF75849B),
-        unselectedTextColor = Color(0xFF75849B),
-        indicatorColor = Color(0xFFE9F0FF)
+    AppBottomBar(
+        items = listOf(
+            AppBottomNavItem("Home", Icons.Outlined.Home, currentPage == AdminPage.HOME) { onNavigate(AdminPage.HOME) },
+            AppBottomNavItem(
+                "Agents",
+                Icons.Outlined.Groups,
+                currentPage in listOf(AdminPage.AGENTS_HUB, AdminPage.UPLINE_LIST, AdminPage.DOWNLINE_LIST, AdminPage.USER_DETAILS)
+            ) { onNavigate(AdminPage.AGENTS_HUB) },
+            AppBottomNavItem("Projects", Icons.Outlined.Folder, currentPage == AdminPage.MASTER_PROJECT) { onNavigate(AdminPage.MASTER_PROJECT) },
+            AppBottomNavItem("Profile", Icons.Outlined.Person, currentPage == AdminPage.PROFILE) { onNavigate(AdminPage.PROFILE) }
+        ),
+        centerAction = AppBottomNavItem("Broadcast", Icons.Default.Campaign, currentPage == AdminPage.BROADCAST) {
+            onNavigate(AdminPage.BROADCAST)
+        },
+        selectedColor = AdminPrimaryBlue
     )
-    NavigationBar(
-        modifier = Modifier.fillMaxWidth().height(76.dp),
-        containerColor = Color.White,
-        tonalElevation = 5.dp
-    ) {
-        NavigationBarItem(
-            selected = currentPage == AdminPage.HOME,
-            onClick = { onNavigate(AdminPage.HOME) },
-            icon = { Icon(Icons.Outlined.Home, contentDescription = "Home") },
-            label = { Text("Home", fontSize = 10.sp) },
-            colors = navColors
-        )
-        NavigationBarItem(
-            selected = currentPage in listOf(AdminPage.AGENTS_HUB, AdminPage.UPLINE_LIST, AdminPage.DOWNLINE_LIST, AdminPage.USER_DETAILS),
-            onClick = { onNavigate(AdminPage.AGENTS_HUB) },
-            icon = { Icon(Icons.Outlined.Groups, contentDescription = "Agents") },
-            label = { Text("Agents", fontSize = 10.sp) },
-            colors = navColors
-        )
-        NavigationBarItem(
-            selected = currentPage == AdminPage.BROADCAST,
-            onClick = { onNavigate(AdminPage.BROADCAST) },
-            icon = {
-                Box(modifier = Modifier.size(38.dp).clip(CircleShape).background(AdminPrimaryBlue), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Campaign, contentDescription = "Broadcast", tint = Color.White, modifier = Modifier.size(20.dp))
-                }
-            },
-            label = { Text("Broadcast", fontSize = 10.sp) },
-            colors = navColors
-        )
-        NavigationBarItem(
-            selected = currentPage == AdminPage.MASTER_PROJECT,
-            onClick = { onNavigate(AdminPage.MASTER_PROJECT) },
-            icon = { Icon(Icons.Outlined.Folder, contentDescription = "Projects") },
-            label = { Text("Projects", fontSize = 10.sp) },
-            colors = navColors
-        )
-        NavigationBarItem(
-            selected = currentPage == AdminPage.PROFILE,
-            onClick = { onNavigate(AdminPage.PROFILE) },
-            icon = { Icon(Icons.Outlined.Person, contentDescription = "Profile") },
-            label = { Text("Profile", fontSize = 10.sp) },
-            colors = navColors
-        )
-    }
-}
-
-@Composable
-private fun AdminNavIconItem(
-    label: String,
-    icon: ImageVector,
-    selected: Boolean = false,
-    onClick: () -> Unit
-) {
-    val tint = if (selected) AdminPrimaryBlue else Color.Black
-    Column(
-        modifier = Modifier
-            .clickable { onClick() }
-            .padding(vertical = 2.dp, horizontal = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = tint,
-            modifier = Modifier.size(22.dp)
-        )
-        Text(
-            text = label,
-            color = tint,
-            fontSize = 9.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-        )
-    }
 }
 
 // ==========================================
@@ -2198,76 +2136,101 @@ private fun AdminExportReportsRoute(
     var reportPreviewTitle by remember { mutableStateOf<String?>(null) }
     var activeReportKey by remember { mutableStateOf<String?>(null) }
     var reportRows by remember { mutableStateOf<List<Map<String, Any?>>>(emptyList()) }
+    var reportColumns by remember { mutableStateOf<List<ReportColumnDto>>(emptyList()) }
+    var reportSummary by remember { mutableStateOf<Map<String, Any?>>(emptyMap()) }
+    var previewFrom by remember { mutableStateOf<String?>(null) }
+    var previewTo by remember { mutableStateOf<String?>(null) }
     var selectedFormat by rememberSaveable { mutableStateOf("PDF") }
     var reportFrom by rememberSaveable { mutableStateOf("") }
     var reportTo by rememberSaveable { mutableStateOf("") }
-    var savedFileMessage by remember { mutableStateOf<String?>(null) }
+    var exportedFiles by remember { mutableStateOf<List<String>?>(null) }
+    val selectedReports = remember { mutableStateListOf<String>() }
+    var exporting by remember { mutableStateOf(false) }
+    var loading by remember { mutableStateOf(false) }
 
     val primaryReports = listOf(
-        "Export Full Report" to "deal-summary",
-        "Export Sales Report" to "project-conversion",
-        "Export Commissions Report" to "commission-sharing",
-        "Export Aging Report" to "aging-payment",
-        "Export Agent Rank Report" to "agent-performance"
+        "Ringkasan Deal & Nilai Proyek" to "deal-summary",
+        "Konversi Proyek" to "project-conversion",
+        "Komisi & Bagi Hasil" to "commission-sharing",
+        "Piutang & Umur Pembayaran" to "aging-payment",
+        "Performa & Kinerja Agen" to "agent-performance"
     )
 
     val additionalBookReports = listOf(
-        "Payment History Report" to "payment-history",
-        "Cancelled Project Analysis" to "cancel-analysis",
-        "Agent Hierarchy Productivity" to "agent-hierarchy",
-        "Project Category Portfolio" to "project-category",
-        "Revenue Forecast Report" to "revenue-forecast"
+        "Pembayaran & Riwayat Transaksi" to "payment-history",
+        "Evaluasi Proyek Batal" to "cancel-analysis",
+        "Produktivitas Hierarki Agen" to "agent-hierarchy",
+        "Portofolio Kategori Proyek" to "project-category",
+        "Proyeksi Potensi Pendapatan" to "revenue-forecast"
     )
 
-    fun triggerFileDownload(typeKey: String, format: String) {
-        ApiService.adminDownloadReportFile(
-            context = context,
-            token = session.token,
-            reportType = typeKey,
-            format = format,
-            from = reportFrom.ifBlank { null },
-            to = reportTo.ifBlank { null }
-        ) { res ->
-            res.onSuccess { savedPath ->
-                savedFileMessage = "Saved to $savedPath"
-                Toast.makeText(context, "Saved $format to $savedPath", Toast.LENGTH_LONG).show()
-            }
-            res.onFailure { err ->
-                Toast.makeText(context, err.message ?: "Failed to save $format", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    fun loadReport(label: String, typeKey: String) {
+    fun validPeriod(): Boolean {
         val from = runCatching { if (reportFrom.isBlank()) null else java.time.LocalDate.parse(reportFrom.trim()) }.getOrElse {
             Toast.makeText(context, "Tanggal Mulai harus YYYY-MM-DD", Toast.LENGTH_SHORT).show()
-            return
+            return false
         }
         val to = runCatching { if (reportTo.isBlank()) null else java.time.LocalDate.parse(reportTo.trim()) }.getOrElse {
             Toast.makeText(context, "Tanggal Selesai harus YYYY-MM-DD", Toast.LENGTH_SHORT).show()
-            return
+            return false
         }
         if (from != null && to != null && from.isAfter(to)) {
             Toast.makeText(context, "Tanggal Mulai harus sebelum Tanggal Selesai", Toast.LENGTH_SHORT).show()
-            return
+            return false
         }
-        activeReportKey = typeKey
-        savedFileMessage = null
-        // 1. Download the actual PDF or Excel (.xlsx) file from the backend to the phone's Downloads folder
-        triggerFileDownload(typeKey, selectedFormat)
+        return true
+    }
 
-        // 2. Also load the JSON rows to display the interactive preview table
+    fun downloadReports(types: List<String>, format: String, from: String?, to: String?) {
+        if (types.isEmpty() || exporting) return
+        exporting = true
+        selectedReports.clear()
+        val savedPaths = mutableListOf<String>()
+        fun downloadNext(index: Int) {
+            if (index == types.size) {
+                exporting = false
+                exportedFiles = savedPaths.toList()
+                return
+            }
+            ApiService.adminDownloadReportFile(context, session.token, types[index], format, from, to) { result ->
+                result.onSuccess { savedPath ->
+                    savedPaths.add(savedPath)
+                    downloadNext(index + 1)
+                }
+                result.onFailure { err ->
+                    exporting = false
+                    if (err is ApiError && err.unauthorized) onExpired()
+                    else Toast.makeText(context, "Gagal mengunduh ${types[index]} (${index} berhasil): ${err.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+        downloadNext(0)
+    }
+
+    fun loadReport(label: String, typeKey: String) {
+        if (!validPeriod() || loading) return
+        val from = reportFrom.trim().ifBlank { null }
+        val to = reportTo.trim().ifBlank { null }
+        loading = true
         ApiService.adminExportReport(
-            session.token, typeKey,
-            from = reportFrom.ifBlank { null },
-            to = reportTo.ifBlank { null }
+            session.token, typeKey, from = from, to = to
         ) { res ->
+            loading = false
             res.onSuccess { dto ->
-                reportPreviewTitle = "$label ($selectedFormat)"
+                activeReportKey = typeKey
+                previewFrom = from
+                previewTo = to
+                reportPreviewTitle = label
                 reportRows = dto.data
+                reportColumns = dto.columns.ifEmpty {
+                    dto.data.firstOrNull()?.keys?.map { key ->
+                        ReportColumnDto(key, key.replace('_', ' ').replaceFirstChar { it.uppercase() })
+                    } ?: emptyList()
+                }
+                reportSummary = dto.summary
             }
             res.onFailure { err ->
                 if (err is ApiError && err.unauthorized) onExpired()
+                else Toast.makeText(context, err.message ?: "Gagal memuat laporan", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -2311,7 +2274,7 @@ private fun AdminExportReportsRoute(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Primary Executive Reports",
+                        text = "Pilih laporan",
                         color = Color.Black,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
@@ -2355,7 +2318,7 @@ private fun AdminExportReportsRoute(
                         accentColor = AdminPrimaryBlue,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp)
+                            .heightIn(min = 60.dp)
                             .clickable { loadReport(label, typeKey) },
                         cornerRadius = 14.dp,
                         leftBorderWidth = 4.dp,
@@ -2366,14 +2329,13 @@ private fun AdminExportReportsRoute(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Description,
-                                    contentDescription = label,
-                                    tint = AdminPrimaryBlue,
-                                    modifier = Modifier.size(20.dp)
+                            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = typeKey in selectedReports,
+                                    onCheckedChange = { checked ->
+                                        if (checked) selectedReports.add(typeKey) else selectedReports.remove(typeKey)
+                                    }
                                 )
-                                Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = label,
                                     color = Color.Black,
@@ -2382,8 +2344,8 @@ private fun AdminExportReportsRoute(
                                 )
                             }
                             Icon(
-                                imageVector = Icons.Default.Download,
-                                contentDescription = "Download",
+                                imageVector = Icons.Default.Description,
+                                contentDescription = "Pratinjau",
                                 tint = AdminGreen,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -2393,7 +2355,7 @@ private fun AdminExportReportsRoute(
 
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Additional Business Modules (10-Module Suite)",
+                    text = "Laporan lainnya",
                     color = Color.Black,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
@@ -2404,7 +2366,7 @@ private fun AdminExportReportsRoute(
                         accentColor = AdminGreen,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp)
+                            .heightIn(min = 60.dp)
                             .clickable { loadReport(label, typeKey) },
                         cornerRadius = 12.dp,
                         leftBorderWidth = 4.dp,
@@ -2415,20 +2377,41 @@ private fun AdminExportReportsRoute(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(
-                                text = label,
-                                color = Color.Black,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = typeKey in selectedReports,
+                                    onCheckedChange = { checked ->
+                                        if (checked) selectedReports.add(typeKey) else selectedReports.remove(typeKey)
+                                    }
+                                )
+                                Text(
+                                    text = label,
+                                    color = Color.Black,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                             Icon(
-                                imageVector = Icons.Default.Download,
-                                contentDescription = "Export",
+                                imageVector = Icons.Default.Description,
+                                contentDescription = "Pratinjau",
                                 tint = AdminPrimaryBlue,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
                     }
+                }
+                Text("Ketuk nama laporan untuk pratinjau, atau centang untuk ekspor.", fontSize = 11.sp)
+                Button(
+                    onClick = {
+                        if (validPeriod()) downloadReports(
+                            selectedReports.toList(), selectedFormat,
+                            reportFrom.trim().ifBlank { null }, reportTo.trim().ifBlank { null }
+                        )
+                    },
+                    enabled = selectedReports.isNotEmpty() && !exporting,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (exporting) "Mengunduh..." else "Ekspor ${selectedReports.size} laporan ($selectedFormat)")
                 }
             }
         }
@@ -2446,13 +2429,17 @@ private fun AdminExportReportsRoute(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    savedFileMessage?.let { msg ->
-                        Text(
-                            text = "✓ $msg",
-                            color = AdminGreen,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                    if (reportSummary.isNotEmpty()) {
+                        Text("Ringkasan", fontWeight = FontWeight.Bold, color = AdminDarkBlue, fontSize = 13.sp)
+                        reportSummary.forEach { (key, value) ->
+                            val label = reportColumns.firstOrNull { it.key == key }?.label
+                                ?: key.replace('_', ' ').replaceFirstChar { it.uppercase() }
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                                Text(label, modifier = Modifier.weight(1f), fontSize = 12.sp, color = Color.DarkGray)
+                                Text("${value ?: "-"}", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                            HorizontalDivider(color = Color(0xFFE4EBF5))
+                        }
                     }
 
                     Row(
@@ -2460,7 +2447,8 @@ private fun AdminExportReportsRoute(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Button(
-                            onClick = { activeReportKey?.let { triggerFileDownload(it, "PDF") } },
+                            onClick = { activeReportKey?.let { downloadReports(listOf(it), "PDF", previewFrom, previewTo) } },
+                            enabled = !exporting,
                             colors = ButtonDefaults.buttonColors(containerColor = AdminPrimaryBlue),
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.weight(1f).height(34.dp),
@@ -2469,7 +2457,8 @@ private fun AdminExportReportsRoute(
                             Text("Download PDF", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
                         Button(
-                            onClick = { activeReportKey?.let { triggerFileDownload(it, "Excel") } },
+                            onClick = { activeReportKey?.let { downloadReports(listOf(it), "Excel", previewFrom, previewTo) } },
+                            enabled = !exporting,
                             colors = ButtonDefaults.buttonColors(containerColor = AdminGreen),
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.weight(1f).height(34.dp),
@@ -2479,30 +2468,67 @@ private fun AdminExportReportsRoute(
                         }
                     }
 
-                    if (reportRows.isEmpty()) {
-                        Text("No rows recorded yet for this period.", fontSize = 12.sp, color = Color.DarkGray)
-                    } else {
-                        reportRows.forEachIndexed { i, row ->
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(Color(0xFFF3F4F6))
-                                    .padding(8.dp)
-                            ) {
-                                Text("Row #${i + 1}", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = AdminPrimaryBlue)
-                                row.entries.forEach { (k, v) ->
-                                    Text("$k: ${v ?: "-"}", fontSize = 10.5.sp, color = Color.Black)
+                    if (reportColumns.isNotEmpty()) {
+                        Text("Rincian laporan", fontWeight = FontWeight.Bold, color = AdminDarkBlue, fontSize = 13.sp)
+                        Text("Geser ke samping untuk melihat semua kolom", fontSize = 10.sp, color = Color.DarkGray)
+                        Column(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                            Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+                                reportColumns.forEach { column ->
+                                    Box(
+                                        modifier = Modifier.width(130.dp).fillMaxHeight()
+                                            .background(AdminDarkBlue)
+                                            .border(0.5.dp, Color(0xFFCBD5E1))
+                                            .padding(8.dp)
+                                    ) {
+                                        Text(column.label, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                    }
+                                }
+                            }
+                            reportRows.forEachIndexed { index, row ->
+                                Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+                                    reportColumns.forEach { column ->
+                                        Box(
+                                            modifier = Modifier.width(130.dp).fillMaxHeight()
+                                                .background(if (index % 2 == 0) Color(0xFFF3F6FB) else Color.White)
+                                                .border(0.5.dp, Color(0xFFCBD5E1))
+                                                .padding(8.dp)
+                                        ) {
+                                            Text("${row[column.key] ?: "-"}", fontSize = 11.sp, color = Color.Black)
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
+                    if (reportRows.isEmpty()) Text("Belum ada data untuk periode ini.", fontSize = 12.sp, color = Color.DarkGray)
                 }
             },
             confirmButton = {
                 TextButton(onClick = { reportPreviewTitle = null }) {
                     Text("Close")
                 }
+            }
+        )
+    }
+
+    exportedFiles?.let { paths ->
+        AlertDialog(
+            onDismissRequest = { exportedFiles = null },
+            icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = AdminGreen) },
+            title = { Text("Ekspor berhasil", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(
+                    modifier = Modifier.heightIn(max = 240.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("${paths.size} laporan berhasil disimpan di perangkat Anda.")
+                    paths.forEach { path ->
+                        Text(path, fontSize = 12.sp, color = Color.DarkGray)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { exportedFiles = null }) { Text("OK") }
             }
         )
     }
